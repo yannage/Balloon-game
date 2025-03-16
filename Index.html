@@ -49,11 +49,6 @@
             color: white;
             pointer-events: none;
         }
-        @keyframes sway {
-            0% { transform: translateX(-5px); }
-            50% { transform: translateX(5px); }
-            100% { transform: translateX(-5px); }
-        }
         #saved-animals {
             margin-top: 10px;
             font-size: 20px;
@@ -107,7 +102,6 @@
         let animals = Object.keys(animalData);
 
         function startGame() {
-            clearInterval(gameInterval);
             document.getElementById("score").innerText = score;
             document.getElementById("level").innerText = level;
             document.getElementById("timer").innerText = timeLeft;
@@ -126,16 +120,12 @@
         }
 
         function startTimer() {
-            clearInterval(gameInterval);
             timeLeft = 30;
             document.getElementById("timer").innerText = timeLeft;
             gameInterval = setInterval(() => {
                 timeLeft--;
                 document.getElementById("timer").innerText = timeLeft;
-                if (timeLeft <= 0) {
-                    clearInterval(gameInterval);
-                    endLevel();
-                }
+                if (timeLeft === 0) endLevel();
             }, 1000);
         }
 
@@ -154,7 +144,7 @@
                     let rope = document.createElement("div");
                     rope.classList.add("rope");
                     rope.innerHTML = "〰️";
-                    rope.onclick = () => popBalloon(balloonGroup, selectedBalloon);
+                    rope.onclick = () => popBalloon(balloonGroup);
 
                     let attached = document.createElement("div");
                     attached.classList.add("attached");
@@ -173,7 +163,7 @@
                         moveRockBalloon(balloonGroup);
                     }
 
-                    balloon.onclick = () => popBalloon(balloonGroup, selectedAnimal);
+                    balloon.onclick = () => popBalloon(balloonGroup);
                     document.getElementById("game-container").appendChild(balloonGroup);
 
                     setTimeout(() => {
@@ -193,23 +183,25 @@
             }, Math.random() * 2000 + 1000);
         }
 
-        function popBalloon(balloonGroup, attachedItem) {
-            balloonGroup.innerHTML = "💥";
+        function popBalloon(balloonGroup) {
+            let balloon = balloonGroup.querySelector(".balloon");
+            let explosion = document.createElement("div");
+            explosion.innerHTML = "💥";
+            explosion.style.position = "absolute";
+            explosion.style.left = balloonGroup.style.left;
+            explosion.style.bottom = balloonGroup.style.bottom;
+            explosion.style.fontSize = "30px";
 
-            if (attachedItem !== "🪨") {
-                score += animalData[attachedItem].points;
-                savedAnimals.push(attachedItem);
-            } else {
-                score -= 10;
-            }
+            document.getElementById("game-container").appendChild(explosion);
 
-            document.getElementById("score").innerText = score;
-            document.getElementById("saved-list").innerText = savedAnimals.length ? savedAnimals.join(" ") : "(None)";
-
-            setTimeout(() => balloonGroup.remove(), 500);
+            setTimeout(() => {
+                explosion.remove();
+                balloonGroup.remove();
+            }, 500);
         }
 
         function endLevel() {
+            clearInterval(gameInterval);
             clearInterval(balloonInterval);
             clearInterval(cloudInterval);
             document.getElementById("next-level").style.display = "block";

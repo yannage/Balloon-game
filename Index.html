@@ -28,7 +28,7 @@
         }
         .balloon {
             font-size: 30px;
-            cursor: pointer; /* Clickable */
+            cursor: pointer;
             display: block;
             margin-bottom: -8px;
         }
@@ -37,12 +37,12 @@
             display: block;
             transform: rotate(90deg);
             margin-bottom: -8px;
-            pointer-events: none; /* No longer clickable */
+            pointer-events: none;
         }
         .attached {
             font-size: 30px;
             display: block;
-            pointer-events: none; /* No longer clickable */
+            pointer-events: none;
         }
         .cloud {
             position: absolute;
@@ -80,7 +80,7 @@
 
     <div id="saved-animals">
         <h3>Saved Animals:</h3>
-        <p id="saved-list">(None)</p>
+        <p id="saved-list"></p>
     </div>
 
     <script>
@@ -88,7 +88,7 @@
         let level = 1;
         let timeLeft = 30;
         let gameInterval, balloonInterval, cloudInterval;
-        let savedAnimals = [];
+        let savedAnimals = {};
 
         let animalData = {
             "🐌": { speed: 2.7, points: 20 },
@@ -99,14 +99,15 @@
             "🪨": { speed: 3.5, points: -10 }
         };
 
-        let balloonColors = ["🟠", "🟡", "🟢", "🟣", "🟤", "🔴", "🔵", "⚪", "⚫"]; 
+        let balloonColors = ["🟠", "🟡", "🟢", "🟣", "🟤", "🔴", "🔵", "⚪", "⚫"];
         let animals = Object.keys(animalData);
 
         function startGame() {
+            savedAnimals = {}; // Reset saved animals for new level
             document.getElementById("score").innerText = score;
             document.getElementById("level").innerText = level;
             document.getElementById("timer").innerText = timeLeft;
-            document.getElementById("saved-list").innerText = savedAnimals.length ? savedAnimals.join(" ") : "(None)";
+            updateSavedAnimalsDisplay();
             document.getElementById("next-level").style.display = "none";
 
             updateAnimalValues();
@@ -159,7 +160,7 @@
                     balloonGroup.style.left = Math.random() * 250 + "px";
                     balloonGroup.style.bottom = "0px";
 
-                    balloon.onclick = () => popBalloon(balloonGroup, selectedAnimal); // Only balloon is clickable
+                    balloon.onclick = () => popBalloon(balloonGroup, selectedAnimal);
 
                     document.getElementById("game-container").appendChild(balloonGroup);
 
@@ -180,14 +181,21 @@
                 score -= 10;
             } else {
                 score += animalData[attachedItem].points;
-                savedAnimals.push(attachedItem);
+                savedAnimals[attachedItem] = (savedAnimals[attachedItem] || 0) + 1;
             }
 
             document.getElementById("score").innerText = score;
-            document.getElementById("saved-list").innerText = savedAnimals.length ? savedAnimals.join(" ") : "(None)";
+            updateSavedAnimalsDisplay();
 
             balloonGroup.style.transform = "none";
             setTimeout(() => balloonGroup.remove(), 500);
+        }
+
+        function updateSavedAnimalsDisplay() {
+            let savedText = Object.entries(savedAnimals)
+                .map(([animal, count]) => `${animal} (${count} saved)`)
+                .join("  ");
+            document.getElementById("saved-list").innerText = savedText || "(None)";
         }
 
         function spawnClouds() {

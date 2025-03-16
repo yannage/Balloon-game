@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Balloon Pop Game</title>
+    <title>Balloon Rescue Game</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -20,11 +20,27 @@
             border: 2px solid black;
             overflow: hidden;
         }
-        .balloon {
+        .balloon-group {
             position: absolute;
+            text-align: center;
+            transition: transform 3s linear;
+        }
+        .balloon {
             font-size: 30px;
             cursor: pointer;
-            transition: transform 3s linear;
+            display: block;
+        }
+        .rope {
+            font-size: 20px;
+            display: block;
+        }
+        .attached {
+            font-size: 30px;
+            display: block;
+        }
+        #saved-animals {
+            margin-top: 10px;
+            font-size: 20px;
         }
         #next-level {
             display: none;
@@ -40,28 +56,47 @@
 </head>
 <body>
 
-    <h1>🎈 Balloon Pop Game 🎈</h1>
+    <h1>🎈 Balloon Rescue Game 🎈</h1>
     <h2>Level: <span id="level">1</span></h2>
     <h2>Score: <span id="score">0</span></h2>
     <h2>Time Left: <span id="timer">30</span></h2>
+    <h3>Animal Values: <span id="animal-values"></span></h3>
 
     <div id="game-container"></div>
 
     <button id="next-level" onclick="nextLevel()">Next Level</button>
+
+    <div id="saved-animals">
+        <h3>Saved Animals:</h3>
+        <p id="saved-list">(None)</p>
+    </div>
 
     <script>
         let score = 0;
         let level = 1;
         let timeLeft = 30;
         let gameInterval, balloonInterval;
+        let savedAnimals = [];
+        let animalPoints = {
+            "🐻": 5, "🐢": 10, "🐶": 15, "🐱": 20, "🪨": -10
+        };
+        let animals = ["🐻", "🐢", "🐶", "🐱", "🪨"];
 
         function startGame() {
             document.getElementById("score").innerText = score;
             document.getElementById("level").innerText = level;
             document.getElementById("timer").innerText = timeLeft;
+            document.getElementById("saved-list").innerText = savedAnimals.length ? savedAnimals.join(" ") : "(None)";
             document.getElementById("next-level").style.display = "none";
+
+            updateAnimalValues();
             spawnBalloons();
             startTimer();
+        }
+
+        function updateAnimalValues() {
+            let valuesText = Object.keys(animalPoints).map(animal => `${animal}: ${animalPoints[animal]} pts`).join(" | ");
+            document.getElementById("animal-values").innerText = valuesText;
         }
 
         function startTimer() {
@@ -78,27 +113,60 @@
             balloonInterval = setInterval(() => {
                 let numBalloons = Math.floor(Math.random() * 3) + 1; // 1-3 balloons per spawn
                 for (let i = 0; i < numBalloons; i++) {
+                    let balloonGroup = document.createElement("div");
+                    balloonGroup.classList.add("balloon-group");
+
                     let balloon = document.createElement("div");
                     balloon.classList.add("balloon");
                     balloon.innerHTML = "🎈";
-                    balloon.style.left = Math.random() * 250 + "px";
-                    balloon.style.bottom = "0px";
-                    balloon.onclick = () => popBalloon(balloon);
-                    document.getElementById("game-container").appendChild(balloon);
+
+                    let rope = document.createElement("div");
+                    rope.classList.add("rope");
+                    rope.innerHTML = "〰️";
+
+                    let attached = document.createElement("div");
+                    attached.classList.add("attached");
+                    let selectedAnimal = animals[Math.floor(Math.random() * animals.length)];
+                    attached.innerHTML = selectedAnimal;
+
+                    balloonGroup.appendChild(balloon);
+                    balloonGroup.appendChild(rope);
+                    balloonGroup.appendChild(attached);
+
+                    balloonGroup.style.left = Math.random() * 250 + "px";
+                    balloonGroup.style.bottom = "0px";
+
+                    balloon.onclick = () => popBalloon(balloonGroup, selectedAnimal);
+
+                    document.getElementById("game-container").appendChild(balloonGroup);
 
                     setTimeout(() => {
-                        balloon.style.transform = "translateY(-500px)";
-                        setTimeout(() => balloon.remove(), 3000);
+                        balloonGroup.style.transform = "translateY(-500px)";
+                        setTimeout(() => balloonGroup.remove(), 3000);
                     }, 100);
                 }
             }, 2000);
         }
 
-        function popBalloon(balloon) {
+        function popBalloon(balloonGroup, attachedItem) {
+            let balloon = balloonGroup.querySelector(".balloon");
             balloon.innerHTML = "💥";
-            score += 10;
+
+            let rope = balloonGroup.querySelector(".rope");
+            let attached = balloonGroup.querySelector(".attached");
+
+            if (attachedItem === "🪨") {
+                score -= 10;
+            } else {
+                score += animalPoints[attachedItem];
+                savedAnimals.push(attachedItem);
+            }
+
             document.getElementById("score").innerText = score;
-            setTimeout(() => balloon.remove(), 500);
+            document.getElementById("saved-list").innerText = savedAnimals.length ? savedAnimals.join(" ") : "(None)";
+
+            balloonGroup.style.transform = "none"; // Stop movement
+            setTimeout(() => balloonGroup.remove(), 500);
         }
 
         function endLevel() {

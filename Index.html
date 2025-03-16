@@ -10,6 +10,7 @@
             font-family: Arial, sans-serif;
             text-align: center;
             background-color: skyblue;
+            overflow: hidden;
         }
         #game-container {
             position: relative;
@@ -23,7 +24,7 @@
         .balloon-group {
             position: absolute;
             text-align: center;
-            transition: transform 3s linear;
+            transition: transform linear;
         }
         .balloon {
             font-size: 30px;
@@ -33,10 +34,17 @@
         .rope {
             font-size: 20px;
             display: block;
+            transform: rotate(90deg);
         }
         .attached {
             font-size: 30px;
             display: block;
+        }
+        .cloud {
+            position: absolute;
+            font-size: 40px;
+            color: white;
+            pointer-events: none;
         }
         #saved-animals {
             margin-top: 10px;
@@ -75,12 +83,19 @@
         let score = 0;
         let level = 1;
         let timeLeft = 30;
-        let gameInterval, balloonInterval;
+        let gameInterval, balloonInterval, cloudInterval;
         let savedAnimals = [];
-        let animalPoints = {
-            "🐻": 5, "🐢": 10, "🐶": 15, "🐱": 20, "🪨": -10
+
+        let animalData = {
+            "🐌": { speed: 3, points: 20 },  // Lightest, fastest, highest points
+            "🐢": { speed: 1, points: 5 },   // Heaviest, slowest, low points
+            "🐿️": { speed: 2, points: 10 }, // Medium speed and points
+            "🦎": { speed: 2.5, points: 15 },
+            "🐥": { speed: 2, points: 12 },
+            "🪨": { speed: 2, points: -10 }  // Rock: neutral speed, negative points
         };
-        let animals = ["🐻", "🐢", "🐶", "🐱", "🪨"];
+
+        let animals = Object.keys(animalData);
 
         function startGame() {
             document.getElementById("score").innerText = score;
@@ -91,11 +106,12 @@
 
             updateAnimalValues();
             spawnBalloons();
+            spawnClouds();
             startTimer();
         }
 
         function updateAnimalValues() {
-            let valuesText = Object.keys(animalPoints).map(animal => `${animal}: ${animalPoints[animal]} pts`).join(" | ");
+            let valuesText = animals.map(animal => `${animal}: ${animalData[animal].points} pts`).join(" | ");
             document.getElementById("animal-values").innerText = valuesText;
         }
 
@@ -111,7 +127,7 @@
 
         function spawnBalloons() {
             balloonInterval = setInterval(() => {
-                let numBalloons = Math.floor(Math.random() * 3) + 1; // 1-3 balloons per spawn
+                let numBalloons = Math.floor(Math.random() * 3) + 1;
                 for (let i = 0; i < numBalloons; i++) {
                     let balloonGroup = document.createElement("div");
                     balloonGroup.classList.add("balloon-group");
@@ -133,6 +149,7 @@
                     balloonGroup.appendChild(rope);
                     balloonGroup.appendChild(attached);
 
+                    let balloonSpeed = animalData[selectedAnimal].speed;
                     balloonGroup.style.left = Math.random() * 250 + "px";
                     balloonGroup.style.bottom = "0px";
 
@@ -141,8 +158,9 @@
                     document.getElementById("game-container").appendChild(balloonGroup);
 
                     setTimeout(() => {
+                        balloonGroup.style.transitionDuration = `${balloonSpeed}s`;
                         balloonGroup.style.transform = "translateY(-500px)";
-                        setTimeout(() => balloonGroup.remove(), 3000);
+                        setTimeout(() => balloonGroup.remove(), balloonSpeed * 1000);
                     }, 100);
                 }
             }, 2000);
@@ -152,26 +170,43 @@
             let balloon = balloonGroup.querySelector(".balloon");
             balloon.innerHTML = "💥";
 
-            let rope = balloonGroup.querySelector(".rope");
-            let attached = balloonGroup.querySelector(".attached");
-
             if (attachedItem === "🪨") {
                 score -= 10;
             } else {
-                score += animalPoints[attachedItem];
+                score += animalData[attachedItem].points;
                 savedAnimals.push(attachedItem);
             }
 
             document.getElementById("score").innerText = score;
             document.getElementById("saved-list").innerText = savedAnimals.length ? savedAnimals.join(" ") : "(None)";
 
-            balloonGroup.style.transform = "none"; // Stop movement
+            balloonGroup.style.transform = "none";
             setTimeout(() => balloonGroup.remove(), 500);
+        }
+
+        function spawnClouds() {
+            cloudInterval = setInterval(() => {
+                let cloud = document.createElement("div");
+                cloud.classList.add("cloud");
+                cloud.innerHTML = "☁️";
+                cloud.style.left = "-50px";
+                cloud.style.top = Math.random() * 400 + "px";
+
+                document.getElementById("game-container").appendChild(cloud);
+
+                let cloudSpeed = Math.random() * 8 + 5;
+                cloud.style.transition = `transform ${cloudSpeed}s linear`;
+                setTimeout(() => {
+                    cloud.style.transform = `translateX(350px)`;
+                    setTimeout(() => cloud.remove(), cloudSpeed * 1000);
+                }, 100);
+            }, 4000);
         }
 
         function endLevel() {
             clearInterval(gameInterval);
             clearInterval(balloonInterval);
+            clearInterval(cloudInterval);
             document.getElementById("next-level").style.display = "block";
         }
 

@@ -49,11 +49,6 @@
             color: white;
             pointer-events: none;
         }
-        @keyframes sway {
-            0% { transform: translateX(-5px); }
-            50% { transform: translateX(5px); }
-            100% { transform: translateX(-5px); }
-        }
         #saved-animals {
             margin-top: 10px;
             font-size: 20px;
@@ -190,10 +185,19 @@
 
         function popBalloon(balloonGroup) {
             let balloon = balloonGroup.querySelector(".balloon");
-            balloon.innerHTML = "💥";
-            balloonGroup.style.transition = "none";
-            balloonGroup.style.transform = "none";
-            setTimeout(() => balloonGroup.remove(), 500);
+            let explosion = document.createElement("div");
+            explosion.innerHTML = "💥";
+            explosion.style.position = "absolute";
+            explosion.style.left = balloonGroup.style.left;
+            explosion.style.bottom = balloonGroup.style.bottom;
+            explosion.style.fontSize = "30px";
+
+            document.getElementById("game-container").appendChild(explosion);
+
+            setTimeout(() => {
+                explosion.remove();
+                balloonGroup.remove();
+            }, 500);
         }
 
         function endLevel() {

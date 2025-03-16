@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Balloon Rescue Game</title>
+    <title>🎈 Balloon Rescue Game 🎈</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -30,13 +30,13 @@
             font-size: 30px;
             cursor: pointer;
             display: block;
-            margin-bottom: -8px; /* Reduced gap further */
+            margin-bottom: -8px;
         }
         .rope {
             font-size: 18px;
             display: block;
             transform: rotate(90deg);
-            margin-bottom: -8px; /* Reduced gap further */
+            margin-bottom: -8px;
         }
         .attached {
             font-size: 30px;
@@ -47,6 +47,14 @@
             font-size: 40px;
             color: white;
             pointer-events: none;
+        }
+        .swaying {
+            animation: sway 1.5s ease-in-out infinite alternate;
+        }
+        @keyframes sway {
+            0% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            100% { transform: translateX(-5px); }
         }
         #saved-animals {
             margin-top: 10px;
@@ -89,15 +97,15 @@
         let savedAnimals = [];
 
         let animalData = {
-            "🐌": { speed: 2.7, points: 20 },  // Snail moves FASTEST, high points
-            "🐢": { speed: 4.4, points: 5 },   // Turtle moves SLOWEST, low points
-            "🐿️": { speed: 3.8, points: 10 }, // Medium speed & points
+            "🐌": { speed: 2.7, points: 20 },
+            "🐢": { speed: 4.4, points: 5 },
+            "🐿️": { speed: 3.8, points: 10 },
             "🦎": { speed: 3.4, points: 15 },
             "🐥": { speed: 3.6, points: 12 },
-            "🪨": { speed: 3.5, points: -10 }  // Rock: neutral speed, negative points
+            "🪨": { speed: 3.5, points: -10 }
         };
 
-        let balloonColors = ["🎈", "🟢", "🔵", "🟡"]; // Different balloon colors
+        let balloonColors = ["🟠", "🟡", "🟢", "🟣", "🟤", "🔴", "🔵", "⚪", "⚫"]; 
         let animals = Object.keys(animalData);
 
         function startGame() {
@@ -137,7 +145,8 @@
 
                     let balloon = document.createElement("div");
                     balloon.classList.add("balloon");
-                    balloon.innerHTML = balloonColors[Math.floor(Math.random() * balloonColors.length)]; // Random balloon color
+                    let selectedBalloon = balloonColors[Math.floor(Math.random() * balloonColors.length)];
+                    balloon.innerHTML = selectedBalloon;
 
                     let rope = document.createElement("div");
                     rope.classList.add("rope");
@@ -155,6 +164,10 @@
                     let balloonSpeed = animalData[selectedAnimal].speed;
                     balloonGroup.style.left = Math.random() * 250 + "px";
                     balloonGroup.style.bottom = "0px";
+
+                    if (selectedAnimal === "🪨") {
+                        balloonGroup.classList.add("swaying"); // Add sway effect if it's a rock
+                    }
 
                     balloon.onclick = () => popBalloon(balloonGroup, selectedAnimal);
 

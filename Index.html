@@ -37,7 +37,6 @@
             display: block;
             transform: rotate(90deg);
             margin-bottom: -8px;
-            cursor: pointer; /* Rope is now clickable */
         }
         .attached {
             font-size: 30px;
@@ -50,7 +49,7 @@
             pointer-events: none;
         }
         .swaying {
-            animation: sway 1s ease-in-out infinite alternate;
+            animation: sway 1.5s ease-in-out infinite alternate;
         }
         @keyframes sway {
             0% { transform: translateX(-5px); }
@@ -106,7 +105,7 @@
             "🪨": { speed: 3.5, points: -10 }
         };
 
-        let balloonColors = ["🟠", "🟡", "🟢", "🟣", "🟤", "🔴", "🔵", "⚪", "⚫"];
+        let balloonColors = ["🟠", "🟡", "🟢", "🟣", "🟤", "🔴", "🔵", "⚪", "⚫"]; 
         let animals = Object.keys(animalData);
 
         function startGame() {
@@ -146,13 +145,12 @@
 
                     let balloon = document.createElement("div");
                     balloon.classList.add("balloon");
-                    let selectedBalloon = Math.random() < 0.15 ? "😈" : balloonColors[Math.floor(Math.random() * balloonColors.length)];
+                    let selectedBalloon = balloonColors[Math.floor(Math.random() * balloonColors.length)];
                     balloon.innerHTML = selectedBalloon;
 
                     let rope = document.createElement("div");
                     rope.classList.add("rope");
                     rope.innerHTML = "〰️";
-                    rope.onclick = () => popBalloon(balloonGroup);
 
                     let attached = document.createElement("div");
                     attached.classList.add("attached");
@@ -168,34 +166,57 @@
                     balloonGroup.style.bottom = "0px";
 
                     if (selectedAnimal === "🪨") {
-                        balloonGroup.classList.add("swaying"); 
-                        moveRockBalloon(balloonGroup);
+                        balloonGroup.classList.add("swaying"); // Add sway effect if it's a rock
                     }
 
-                    balloon.onclick = () => popBalloon(balloonGroup);
+                    balloon.onclick = () => popBalloon(balloonGroup, selectedAnimal);
+
                     document.getElementById("game-container").appendChild(balloonGroup);
 
                     setTimeout(() => {
                         balloonGroup.style.transitionDuration = `${balloonSpeed}s`;
-                        balloonGroup.style.transform += " translateY(-500px)";
+                        balloonGroup.style.transform = "translateY(-500px)";
                         setTimeout(() => balloonGroup.remove(), balloonSpeed * 1000);
                     }, 100);
                 }
             }, 2000);
         }
 
-        function moveRockBalloon(balloonGroup) {
-            let driftDirection = Math.random() < 0.5 ? -1 : 1;
-            setInterval(() => {
-                let currentLeft = parseInt(balloonGroup.style.left) || 0;
-                let newLeft = currentLeft + (Math.random() * 5 + 2) * driftDirection;
-                balloonGroup.style.left = Math.max(0, Math.min(270, newLeft)) + "px";
-            }, 500);
+        function popBalloon(balloonGroup, attachedItem) {
+            let balloon = balloonGroup.querySelector(".balloon");
+            balloon.innerHTML = "💥";
+
+            if (attachedItem === "🪨") {
+                score -= 10;
+            } else {
+                score += animalData[attachedItem].points;
+                savedAnimals.push(attachedItem);
+            }
+
+            document.getElementById("score").innerText = score;
+            document.getElementById("saved-list").innerText = savedAnimals.length ? savedAnimals.join(" ") : "(None)";
+
+            balloonGroup.style.transform = "none";
+            setTimeout(() => balloonGroup.remove(), 500);
         }
 
-        function popBalloon(balloonGroup) {
-            balloonGroup.innerHTML = "💥";
-            setTimeout(() => balloonGroup.remove(), 500);
+        function spawnClouds() {
+            cloudInterval = setInterval(() => {
+                let cloud = document.createElement("div");
+                cloud.classList.add("cloud");
+                cloud.innerHTML = "☁️";
+                cloud.style.left = "-50px";
+                cloud.style.top = Math.random() * 400 + "px";
+
+                document.getElementById("game-container").appendChild(cloud);
+
+                let cloudSpeed = Math.random() * 8 + 5;
+                cloud.style.transition = `transform ${cloudSpeed}s linear`;
+                setTimeout(() => {
+                    cloud.style.transform = `translateX(350px)`;
+                    setTimeout(() => cloud.remove(), cloudSpeed * 1000);
+                }, 100);
+            }, 4000);
         }
 
         function endLevel() {

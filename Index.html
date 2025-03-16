@@ -102,6 +102,7 @@
         let animals = Object.keys(animalData);
 
         function startGame() {
+            clearInterval(gameInterval);
             document.getElementById("score").innerText = score;
             document.getElementById("level").innerText = level;
             document.getElementById("timer").innerText = timeLeft;
@@ -120,6 +121,7 @@
         }
 
         function startTimer() {
+            clearInterval(gameInterval);
             timeLeft = 30;
             document.getElementById("timer").innerText = timeLeft;
             gameInterval = setInterval(() => {
@@ -187,8 +189,7 @@
         }
 
         function popBalloon(balloonGroup, attachedItem) {
-            let balloon = balloonGroup.querySelector(".balloon");
-            balloon.remove(); // Remove only the balloon, keep rope and animal moving
+            balloonGroup.innerHTML = "💥";
 
             if (attachedItem !== "🪨") {
                 score += animalData[attachedItem].points;

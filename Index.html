@@ -144,7 +144,7 @@
                     let rope = document.createElement("div");
                     rope.classList.add("rope");
                     rope.innerHTML = "〰️";
-                    rope.onclick = () => popBalloon(balloonGroup);
+                    rope.onclick = () => popBalloon(balloonGroup, selectedBalloon);
 
                     let attached = document.createElement("div");
                     attached.classList.add("attached");
@@ -163,7 +163,7 @@
                         moveRockBalloon(balloonGroup);
                     }
 
-                    balloon.onclick = () => popBalloon(balloonGroup);
+                    balloon.onclick = () => popBalloon(balloonGroup, selectedAnimal);
                     document.getElementById("game-container").appendChild(balloonGroup);
 
                     setTimeout(() => {
@@ -183,21 +183,21 @@
             }, Math.random() * 2000 + 1000);
         }
 
-        function popBalloon(balloonGroup) {
+        function popBalloon(balloonGroup, attachedItem) {
             let balloon = balloonGroup.querySelector(".balloon");
-            let explosion = document.createElement("div");
-            explosion.innerHTML = "💥";
-            explosion.style.position = "absolute";
-            explosion.style.left = balloonGroup.style.left;
-            explosion.style.bottom = balloonGroup.style.bottom;
-            explosion.style.fontSize = "30px";
+            balloon.innerHTML = "💥";
+            
+            if (attachedItem !== "🪨") {
+                score += animalData[attachedItem].points;
+                savedAnimals.push(attachedItem);
+            } else {
+                score -= 10;
+            }
 
-            document.getElementById("game-container").appendChild(explosion);
+            document.getElementById("score").innerText = score;
+            document.getElementById("saved-list").innerText = savedAnimals.length ? savedAnimals.join(" ") : "(None)";
 
-            setTimeout(() => {
-                explosion.remove();
-                balloonGroup.remove();
-            }, 500);
+            setTimeout(() => balloonGroup.remove(), 500);
         }
 
         function endLevel() {

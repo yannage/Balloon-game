@@ -37,7 +37,7 @@
             display: block;
             transform: rotate(90deg);
             margin-bottom: -8px;
-            cursor: pointer;
+            cursor: pointer; /* Rope is now clickable */
         }
         .attached {
             font-size: 30px;
@@ -48,6 +48,14 @@
             font-size: 40px;
             color: white;
             pointer-events: none;
+        }
+        .swaying {
+            animation: sway 1s ease-in-out infinite alternate;
+        }
+        @keyframes sway {
+            0% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            100% { transform: translateX(-5px); }
         }
         #saved-animals {
             margin-top: 10px;
@@ -160,6 +168,7 @@
                     balloonGroup.style.bottom = "0px";
 
                     if (selectedAnimal === "🪨") {
+                        balloonGroup.classList.add("swaying"); 
                         moveRockBalloon(balloonGroup);
                     }
 
@@ -167,7 +176,7 @@
                     document.getElementById("game-container").appendChild(balloonGroup);
 
                     setTimeout(() => {
-                        balloonGroup.style.transition = `transform ${balloonSpeed}s linear`;
+                        balloonGroup.style.transitionDuration = `${balloonSpeed}s`;
                         balloonGroup.style.transform += " translateY(-500px)";
                         setTimeout(() => balloonGroup.remove(), balloonSpeed * 1000);
                     }, 100);
@@ -176,28 +185,17 @@
         }
 
         function moveRockBalloon(balloonGroup) {
+            let driftDirection = Math.random() < 0.5 ? -1 : 1;
             setInterval(() => {
                 let currentLeft = parseInt(balloonGroup.style.left) || 0;
-                let shiftAmount = Math.random() * 15 * (Math.random() < 0.5 ? -1 : 1);
-                balloonGroup.style.left = Math.max(0, Math.min(270, currentLeft + shiftAmount)) + "px";
-            }, Math.random() * 2000 + 1000);
+                let newLeft = currentLeft + (Math.random() * 5 + 2) * driftDirection;
+                balloonGroup.style.left = Math.max(0, Math.min(270, newLeft)) + "px";
+            }, 500);
         }
 
         function popBalloon(balloonGroup) {
-            let balloon = balloonGroup.querySelector(".balloon");
-            let explosion = document.createElement("div");
-            explosion.innerHTML = "💥";
-            explosion.style.position = "absolute";
-            explosion.style.left = balloonGroup.style.left;
-            explosion.style.bottom = balloonGroup.style.bottom;
-            explosion.style.fontSize = "30px";
-
-            document.getElementById("game-container").appendChild(explosion);
-
-            setTimeout(() => {
-                explosion.remove();
-                balloonGroup.remove();
-            }, 500);
+            balloonGroup.innerHTML = "💥";
+            setTimeout(() => balloonGroup.remove(), 500);
         }
 
         function endLevel() {

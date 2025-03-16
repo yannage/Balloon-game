@@ -125,7 +125,10 @@
             gameInterval = setInterval(() => {
                 timeLeft--;
                 document.getElementById("timer").innerText = timeLeft;
-                if (timeLeft === 0) endLevel();
+                if (timeLeft <= 0) {
+                    clearInterval(gameInterval);
+                    endLevel();
+                }
             }, 1000);
         }
 
@@ -185,8 +188,8 @@
 
         function popBalloon(balloonGroup, attachedItem) {
             let balloon = balloonGroup.querySelector(".balloon");
-            balloon.innerHTML = "💥";
-            
+            balloon.remove(); // Remove only the balloon, keep rope and animal moving
+
             if (attachedItem !== "🪨") {
                 score += animalData[attachedItem].points;
                 savedAnimals.push(attachedItem);
@@ -201,7 +204,6 @@
         }
 
         function endLevel() {
-            clearInterval(gameInterval);
             clearInterval(balloonInterval);
             clearInterval(cloudInterval);
             document.getElementById("next-level").style.display = "block";

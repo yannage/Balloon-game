@@ -28,7 +28,7 @@
         }
         .balloon {
             font-size: 30px;
-            cursor: pointer;
+            cursor: pointer; /* Clickable */
             display: block;
             margin-bottom: -8px;
         }
@@ -37,10 +37,12 @@
             display: block;
             transform: rotate(90deg);
             margin-bottom: -8px;
+            pointer-events: none; /* No longer clickable */
         }
         .attached {
             font-size: 30px;
             display: block;
+            pointer-events: none; /* No longer clickable */
         }
         .cloud {
             position: absolute;
@@ -94,7 +96,7 @@
             "🐿️": { speed: 3.8, points: 10 },
             "🦎": { speed: 3.4, points: 15 },
             "🐥": { speed: 3.6, points: 12 },
-            "🪨": { speed: 3.5, points: -10 } // Rock moves like all other balloons
+            "🪨": { speed: 3.5, points: -10 }
         };
 
         let balloonColors = ["🟠", "🟡", "🟢", "🟣", "🟤", "🔴", "🔵", "⚪", "⚫"]; 
@@ -157,7 +159,7 @@
                     balloonGroup.style.left = Math.random() * 250 + "px";
                     balloonGroup.style.bottom = "0px";
 
-                    balloon.onclick = () => popBalloon(balloonGroup, selectedAnimal);
+                    balloon.onclick = () => popBalloon(balloonGroup, selectedAnimal); // Only balloon is clickable
 
                     document.getElementById("game-container").appendChild(balloonGroup);
 

@@ -1,1 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balloon Pop Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: skyblue;
+        }
+        #game-container {
+            position: relative;
+            width: 300px;
+            height: 500px;
+            background-color: white;
+            margin: 20px auto;
+            border: 2px solid black;
+            overflow: hidden;
+        }
+        .balloon {
+            position: absolute;
+            font-size: 30px;
+            cursor: pointer;
+            transition: transform 3s linear;
+        }
+        #next-level {
+            display: none;
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 18px;
+            background-color: green;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
 
+    <h1>🎈 Balloon Pop Game 🎈</h1>
+    <h2>Level: <span id="level">1</span></h2>
+    <h2>Score: <span id="score">0</span></h2>
+    <h2>Time Left: <span id="timer">30</span></h2>
+
+    <div id="game-container"></div>
+
+    <button id="next-level" onclick="nextLevel()">Next Level</button>
+
+    <script>
+        let score = 0;
+        let level = 1;
+        let timeLeft = 30;
+        let gameInterval, balloonInterval;
+
+        function startGame() {
+            document.getElementById("score").innerText = score;
+            document.getElementById("level").innerText = level;
+            document.getElementById("timer").innerText = timeLeft;
+            document.getElementById("next-level").style.display = "none";
+            spawnBalloons();
+            startTimer();
+        }
+
+        function startTimer() {
+            timeLeft = 30;
+            document.getElementById("timer").innerText = timeLeft;
+            gameInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById("timer").innerText = timeLeft;
+                if (timeLeft === 0) endLevel();
+            }, 1000);
+        }
+
+        function spawnBalloons() {
+            balloonInterval = setInterval(() => {
+                let numBalloons = Math.floor(Math.random() * 3) + 1; // 1-3 balloons per spawn
+                for (let i = 0; i < numBalloons; i++) {
+                    let balloon = document.createElement("div");
+                    balloon.classList.add("balloon");
+                    balloon.innerHTML = "🎈";
+                    balloon.style.left = Math.random() * 250 + "px";
+                    balloon.style.bottom = "0px";
+                    balloon.onclick = () => popBalloon(balloon);
+                    document.getElementById("game-container").appendChild(balloon);
+
+                    setTimeout(() => {
+                        balloon.style.transform = "translateY(-500px)";
+                        setTimeout(() => balloon.remove(), 3000);
+                    }, 100);
+                }
+            }, 2000);
+        }
+
+        function popBalloon(balloon) {
+            balloon.innerHTML = "💥";
+            score += 10;
+            document.getElementById("score").innerText = score;
+            setTimeout(() => balloon.remove(), 500);
+        }
+
+        function endLevel() {
+            clearInterval(gameInterval);
+            clearInterval(balloonInterval);
+            document.getElementById("next-level").style.display = "block";
+        }
+
+        function nextLevel() {
+            level++;
+            document.getElementById("game-container").innerHTML = "";
+            startGame();
+        }
+
+        startGame();
+    </script>
+
+</body>
+</html>

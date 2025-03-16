@@ -30,13 +30,13 @@
             font-size: 30px;
             cursor: pointer;
             display: block;
-            margin-bottom: -5px; /* Reducing gap */
+            margin-bottom: -8px; /* Reduced gap further */
         }
         .rope {
             font-size: 18px;
             display: block;
             transform: rotate(90deg);
-            margin-bottom: -5px; /* Reducing gap */
+            margin-bottom: -8px; /* Reduced gap further */
         }
         .attached {
             font-size: 30px;
@@ -97,6 +97,7 @@
             "🪨": { speed: 3.5, points: -10 }  // Rock: neutral speed, negative points
         };
 
+        let balloonColors = ["🎈", "🟢", "🔵", "🟡"]; // Different balloon colors
         let animals = Object.keys(animalData);
 
         function startGame() {
@@ -136,7 +137,7 @@
 
                     let balloon = document.createElement("div");
                     balloon.classList.add("balloon");
-                    balloon.innerHTML = "🎈";
+                    balloon.innerHTML = balloonColors[Math.floor(Math.random() * balloonColors.length)]; // Random balloon color
 
                     let rope = document.createElement("div");
                     rope.classList.add("rope");

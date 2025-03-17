@@ -71,7 +71,7 @@
     <h1>🎈 Balloon Rescue Game 🎈</h1>
     <h2>Level: <span id="level">1</span></h2>
     <h2>Score: <span id="score">0</span></h2>
-    <h2>Time Left: <span id="timer">30</span></h2>
+    <h2>Animals Left to Save: <span id="animals-left">10</span></h2>
     <h3>Animal Values: <span id="animal-values"></span></h3>
 
     <div id="game-container"></div>
@@ -86,8 +86,8 @@
     <script>
         let score = 0;
         let level = 1;
-        let timeLeft = 30;
-        let gameInterval, balloonInterval, cloudInterval;
+        let animalsLeft;
+        let balloonInterval;
         let savedAnimals = {};
         let usedPositions = [];
 
@@ -104,21 +104,19 @@
         let animals = Object.keys(animalData);
 
         function startGame() {
-            clearInterval(gameInterval);
             clearInterval(balloonInterval);
-            timeLeft = 30;
+            animalsLeft = 10 + (level - 1);
             savedAnimals = {};
             usedPositions = [];
             document.getElementById("score").innerText = score;
             document.getElementById("level").innerText = level;
-            document.getElementById("timer").innerText = timeLeft;
+            document.getElementById("animals-left").innerText = animalsLeft;
             updateSavedAnimalsDisplay();
             document.getElementById("next-level").style.display = "none";
 
             updateAnimalValues();
             spawnBalloons();
             spawnClouds();
-            startTimer();
         }
 
         function updateAnimalValues() {
@@ -126,20 +124,7 @@
             document.getElementById("animal-values").innerText = valuesText;
         }
 
-        function startTimer() {
-            clearInterval(gameInterval); // Ensure no duplicate timers
-            gameInterval = setInterval(() => {
-                if (timeLeft > 0) {
-                    timeLeft--;
-                    document.getElementById("timer").innerText = timeLeft;
-                } else {
-                    endLevel();
-                }
-            }, 1000);
-        }
-
         function spawnBalloons() {
-            clearInterval(balloonInterval);
             balloonInterval = setInterval(() => {
                 let numBalloons = Math.floor(Math.random() * 3) + 1;
                 usedPositions = [];
@@ -199,13 +184,19 @@
             } else {
                 score += animalData[attachedItem].points;
                 savedAnimals[attachedItem] = (savedAnimals[attachedItem] || 0) + 1;
+                animalsLeft--;
             }
 
             document.getElementById("score").innerText = score;
+            document.getElementById("animals-left").innerText = animalsLeft;
             updateSavedAnimalsDisplay();
 
             balloonGroup.style.transform = "none";
             setTimeout(() => balloonGroup.remove(), 500);
+
+            if (animalsLeft <= 0) {
+                endLevel();
+            }
         }
 
         function updateSavedAnimalsDisplay() {
@@ -216,9 +207,7 @@
         }
 
         function endLevel() {
-            clearInterval(gameInterval);
             clearInterval(balloonInterval);
-            clearInterval(cloudInterval);
             document.getElementById("next-level").style.display = "block";
         }
 

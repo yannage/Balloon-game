@@ -84,8 +84,28 @@
     </div>
 
     <script>
-        let score = 0;
-        let level = 1;
+        function setCookie(name, value, days) {
+            let expires = "";
+            if (days) {
+                let date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            document.cookie = name + "=" + value + expires + "; path=/";
+        }
+
+        function getCookie(name) {
+            let nameEQ = name + "=";
+            let ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i].trim();
+                if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        }
+
+        let score = parseInt(getCookie("score")) || 0;
+        let level = parseInt(getCookie("level")) || 1;
         let animalsLeft;
         let balloonInterval;
         let savedAnimals = {};
@@ -105,7 +125,7 @@
 
         function startGame() {
             clearInterval(balloonInterval);
-            animalsLeft = 10 + (level - 1);
+            animalsLeft = Math.max(10 + (level - 1), 0); 
             savedAnimals = {};
             usedPositions = [];
             document.getElementById("score").innerText = score;
@@ -184,7 +204,7 @@
             } else {
                 score += animalData[attachedItem].points;
                 savedAnimals[attachedItem] = (savedAnimals[attachedItem] || 0) + 1;
-                animalsLeft--;
+                animalsLeft = Math.max(animalsLeft - 1, 0); 
             }
 
             document.getElementById("score").innerText = score;
@@ -194,21 +214,16 @@
             balloonGroup.style.transform = "none";
             setTimeout(() => balloonGroup.remove(), 500);
 
-            if (animalsLeft <= 0) {
+            if (animalsLeft === 0) {
                 endLevel();
             }
-        }
-
-        function updateSavedAnimalsDisplay() {
-            let savedText = Object.entries(savedAnimals)
-                .map(([animal, count]) => `${animal} (${count} saved)`)
-                .join("  ");
-            document.getElementById("saved-list").innerText = savedText || "(None)";
         }
 
         function endLevel() {
             clearInterval(balloonInterval);
             document.getElementById("next-level").style.display = "block";
+            setCookie("level", level, 7);
+            setCookie("score", score, 7);
         }
 
         function nextLevel() {

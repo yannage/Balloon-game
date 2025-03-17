@@ -108,6 +108,7 @@
         let level = parseInt(getCookie("level")) || 1;
         let animalsLeft;
         let balloonInterval;
+        let cloudInterval;
         let savedAnimals = {};
         let usedPositions = [];
 
@@ -125,6 +126,8 @@
 
         function startGame() {
             clearInterval(balloonInterval);
+            clearInterval(cloudInterval);
+            document.getElementById("game-container").innerHTML = "";
             animalsLeft = Math.max(10 + (level - 1), 0); 
             savedAnimals = {};
             usedPositions = [];
@@ -135,13 +138,52 @@
             document.getElementById("next-level").style.display = "none";
 
             updateAnimalValues();
-            spawnBalloons();
             spawnClouds();
+            spawnBalloons();
         }
 
         function updateAnimalValues() {
             let valuesText = animals.map(animal => `${animal}: ${animalData[animal].points} pts`).join(" | ");
             document.getElementById("animal-values").innerText = valuesText;
+        }
+
+        function spawnClouds() {
+            // Create initial clouds
+            for (let i = 0; i < 3; i++) {
+                createCloud();
+            }
+            
+            // Set up cloud spawning interval
+            cloudInterval = setInterval(() => {
+                if (document.querySelectorAll('.cloud').length < 5) {
+                    createCloud();
+                }
+            }, 8000);
+        }
+        
+        function createCloud() {
+            let cloud = document.createElement("div");
+            cloud.classList.add("cloud");
+            cloud.innerHTML = "☁️";
+            
+            // Random position
+            cloud.style.top = Math.floor(Math.random() * 200) + "px";
+            cloud.style.left = "-50px";
+            
+            document.getElementById("game-container").appendChild(cloud);
+            
+            // Animate cloud movement
+            let speed = Math.random() * 25 + 15; // 15-40 seconds to cross
+            
+            setTimeout(() => {
+                cloud.style.transition = `left ${speed}s linear`;
+                cloud.style.left = "350px";
+            }, 100);
+            
+            // Remove cloud after animation
+            setTimeout(() => {
+                cloud.remove();
+            }, speed * 1000);
         }
 
         function spawnBalloons() {
@@ -219,8 +261,24 @@
             }
         }
 
+        function updateSavedAnimalsDisplay() {
+            let savedList = document.getElementById("saved-list");
+            savedList.innerHTML = "";
+            
+            for (let animal in savedAnimals) {
+                if (savedAnimals[animal] > 0) {
+                    savedList.innerHTML += `${animal} x${savedAnimals[animal]} `;
+                }
+            }
+            
+            if (savedList.innerHTML === "") {
+                savedList.innerHTML = "None yet";
+            }
+        }
+
         function endLevel() {
             clearInterval(balloonInterval);
+            clearInterval(cloudInterval);
             document.getElementById("next-level").style.display = "block";
             setCookie("level", level, 7);
             setCookie("score", score, 7);
@@ -228,7 +286,6 @@
 
         function nextLevel() {
             level++;
-            document.getElementById("game-container").innerHTML = "";
             startGame();
         }
 

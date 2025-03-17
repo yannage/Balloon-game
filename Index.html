@@ -86,7 +86,7 @@
     <script>
         let score = 0;
         let level = 1;
-        let timeLeft;
+        let timeLeft = 30;
         let gameInterval, balloonInterval, cloudInterval;
         let savedAnimals = {};
         let usedPositions = [];
@@ -105,6 +105,7 @@
 
         function startGame() {
             clearInterval(gameInterval);
+            clearInterval(balloonInterval);
             timeLeft = 30;
             savedAnimals = {};
             usedPositions = [];
@@ -126,6 +127,7 @@
         }
 
         function startTimer() {
+            clearInterval(gameInterval); // Ensure no duplicate timers
             gameInterval = setInterval(() => {
                 if (timeLeft > 0) {
                     timeLeft--;

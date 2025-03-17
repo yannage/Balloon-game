@@ -89,6 +89,7 @@
         let timeLeft = 30;
         let gameInterval, balloonInterval, cloudInterval;
         let savedAnimals = {};
+        let usedPositions = []; // Store used spawn positions
 
         let animalData = {
             "🐌": { speed: 2.7, points: 20 },
@@ -104,6 +105,7 @@
 
         function startGame() {
             savedAnimals = {}; // Reset saved animals for new level
+            usedPositions = []; // Reset spawn positions
             document.getElementById("score").innerText = score;
             document.getElementById("level").innerText = level;
             document.getElementById("timer").innerText = timeLeft;
@@ -134,6 +136,8 @@
         function spawnBalloons() {
             balloonInterval = setInterval(() => {
                 let numBalloons = Math.floor(Math.random() * 3) + 1;
+                usedPositions = []; // Reset positions each spawn cycle
+
                 for (let i = 0; i < numBalloons; i++) {
                     let balloonGroup = document.createElement("div");
                     balloonGroup.classList.add("balloon-group");
@@ -157,7 +161,15 @@
                     balloonGroup.appendChild(attached);
 
                     let balloonSpeed = animalData[selectedAnimal].speed;
-                    balloonGroup.style.left = Math.random() * 250 + "px";
+                    
+                    // Ensure no overlapping positions
+                    let leftPosition;
+                    do {
+                        leftPosition = Math.floor(Math.random() * 250);
+                    } while (usedPositions.some(pos => Math.abs(pos - leftPosition) < 50)); // Avoid overlap
+
+                    usedPositions.push(leftPosition);
+                    balloonGroup.style.left = leftPosition + "px";
                     balloonGroup.style.bottom = "0px";
 
                     balloon.onclick = () => popBalloon(balloonGroup, selectedAnimal);
@@ -196,25 +208,6 @@
                 .map(([animal, count]) => `${animal} (${count} saved)`)
                 .join("  ");
             document.getElementById("saved-list").innerText = savedText || "(None)";
-        }
-
-        function spawnClouds() {
-            cloudInterval = setInterval(() => {
-                let cloud = document.createElement("div");
-                cloud.classList.add("cloud");
-                cloud.innerHTML = "☁️";
-                cloud.style.left = "-50px";
-                cloud.style.top = Math.random() * 400 + "px";
-
-                document.getElementById("game-container").appendChild(cloud);
-
-                let cloudSpeed = Math.random() * 8 + 5;
-                cloud.style.transition = `transform ${cloudSpeed}s linear`;
-                setTimeout(() => {
-                    cloud.style.transform = `translateX(350px)`;
-                    setTimeout(() => cloud.remove(), cloudSpeed * 1000);
-                }, 100);
-            }, 4000);
         }
 
         function endLevel() {

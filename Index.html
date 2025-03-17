@@ -86,10 +86,10 @@
     <script>
         let score = 0;
         let level = 1;
-        let timeLeft = 30;
+        let timeLeft;
         let gameInterval, balloonInterval, cloudInterval;
         let savedAnimals = {};
-        let usedPositions = []; // Store used spawn positions
+        let usedPositions = [];
 
         let animalData = {
             "🐌": { speed: 2.7, points: 20 },
@@ -104,8 +104,10 @@
         let animals = Object.keys(animalData);
 
         function startGame() {
-            savedAnimals = {}; // Reset saved animals for new level
-            usedPositions = []; // Reset spawn positions
+            clearInterval(gameInterval);
+            timeLeft = 30;
+            savedAnimals = {};
+            usedPositions = [];
             document.getElementById("score").innerText = score;
             document.getElementById("level").innerText = level;
             document.getElementById("timer").innerText = timeLeft;
@@ -124,19 +126,21 @@
         }
 
         function startTimer() {
-            timeLeft = 30;
-            document.getElementById("timer").innerText = timeLeft;
             gameInterval = setInterval(() => {
-                timeLeft--;
-                document.getElementById("timer").innerText = timeLeft;
-                if (timeLeft === 0) endLevel();
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    document.getElementById("timer").innerText = timeLeft;
+                } else {
+                    endLevel();
+                }
             }, 1000);
         }
 
         function spawnBalloons() {
+            clearInterval(balloonInterval);
             balloonInterval = setInterval(() => {
                 let numBalloons = Math.floor(Math.random() * 3) + 1;
-                usedPositions = []; // Reset positions each spawn cycle
+                usedPositions = [];
 
                 for (let i = 0; i < numBalloons; i++) {
                     let balloonGroup = document.createElement("div");
@@ -161,12 +165,11 @@
                     balloonGroup.appendChild(attached);
 
                     let balloonSpeed = animalData[selectedAnimal].speed;
-                    
-                    // Ensure no overlapping positions
+
                     let leftPosition;
                     do {
                         leftPosition = Math.floor(Math.random() * 250);
-                    } while (usedPositions.some(pos => Math.abs(pos - leftPosition) < 50)); // Avoid overlap
+                    } while (usedPositions.some(pos => Math.abs(pos - leftPosition) < 50));
 
                     usedPositions.push(leftPosition);
                     balloonGroup.style.left = leftPosition + "px";

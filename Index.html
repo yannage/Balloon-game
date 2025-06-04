@@ -128,9 +128,11 @@
             clearInterval(balloonInterval);
             clearInterval(cloudInterval);
             document.getElementById("game-container").innerHTML = "";
-            animalsLeft = Math.max(10 + (level - 1), 0); 
+            animalsLeft = Math.max(10 + (level - 1), 0);
             savedAnimals = {};
             usedPositions = [];
+            setCookie("level", level, 7);
+            setCookie("score", score, 7);
             document.getElementById("score").innerText = score;
             document.getElementById("level").innerText = level;
             document.getElementById("animals-left").innerText = animalsLeft;
@@ -286,6 +288,8 @@
 
         function nextLevel() {
             level++;
+            setCookie("level", level, 7);
+            setCookie("score", score, 7);
             startGame();
         }
 

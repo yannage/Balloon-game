@@ -43,6 +43,9 @@
         .balloon:hover {
             transform: scale(1.2);
         }
+        .pop-animation {
+            animation: inflatePop 0.3s forwards;
+        }
         .rope {
             font-size: 18px;
             display: block;
@@ -113,6 +116,11 @@
 
         @keyframes fadeOut {
             to { opacity: 0; transform: scale(1.2); }
+        }
+        @keyframes inflatePop {
+            0% { transform: scale(1); }
+            70% { transform: scale(1.5); }
+            100% { transform: scale(0); opacity: 0; }
         }
     </style>
 </head>
@@ -304,7 +312,12 @@
 
         function popBalloon(balloonGroup, attachedItem) {
             let balloon = balloonGroup.querySelector(".balloon");
-            balloon.innerHTML = "💥";
+            balloon.onclick = null;
+            balloon.classList.add("pop-animation");
+
+            setTimeout(() => {
+                balloon.innerHTML = "💥";
+            }, 150);
 
             if (attachedItem === "🪨") {
                 score -= 10;
@@ -320,7 +333,7 @@
 
                         const h = document.getElementById("game-container").clientHeight;
             balloonGroup.style.transform = "none";
-            setTimeout(() => balloonGroup.remove(), 500);
+            setTimeout(() => balloonGroup.remove(), 300);
 
             if (animalsLeft === 0) {
                 endLevel();

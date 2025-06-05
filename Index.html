@@ -311,6 +311,7 @@
         }
 
         function popBalloon(balloonGroup, attachedItem) {
+            if (isPaused) return;
             let balloon = balloonGroup.querySelector(".balloon");
             balloon.onclick = null;
 
@@ -432,6 +433,7 @@
             if (window.anime && Array.isArray(anime.running)) {
                 anime.running.forEach(anim => anim.pause());
             }
+            document.querySelectorAll('.balloon').forEach(b => b.style.pointerEvents = 'none');
             const btn = document.getElementById("pause-btn");
             if (btn) btn.innerText = "Resume";
         }
@@ -443,6 +445,7 @@
             if (window.anime && Array.isArray(anime.running)) {
                 anime.running.forEach(anim => anim.play());
             }
+            document.querySelectorAll('.balloon').forEach(b => b.style.pointerEvents = 'auto');
             spawnClouds();
             spawnBalloons();
             if (remainingCountdown !== null) {

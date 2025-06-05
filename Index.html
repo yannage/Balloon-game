@@ -29,6 +29,10 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
             overflow: hidden;
         }
+        #game-container.paused {
+            filter: grayscale(1);
+            opacity: 0.6;
+        }
         .balloon-group {
             position: absolute;
             text-align: center;
@@ -164,6 +168,8 @@
         let balloonInterval;
         let cloudInterval;
         let countdownInterval;
+        let balloonAnimations = [];
+        let cloudAnimations = [];
         let savedAnimals = {};
         let usedPositions = [];
         let isPaused = false;
@@ -185,6 +191,10 @@
             clearInterval(balloonInterval);
             clearInterval(cloudInterval);
             clearInterval(countdownInterval);
+            balloonAnimations.forEach(anim => anim.pause());
+            balloonAnimations = [];
+            cloudAnimations.forEach(anim => anim.pause());
+            cloudAnimations = [];
             const container = document.getElementById("game-container");
             container.innerHTML = `
                 <div id="level-complete-overlay">
@@ -242,16 +252,22 @@
             
             // Animate cloud movement
             let speed = Math.random() * 25 + 15; // 15-40 seconds to cross
-            
+            cloud.style.transform = 'translateX(0)';
+
             setTimeout(() => {
-                cloud.style.transition = `left ${speed}s linear`;
-                cloud.style.left = "350px";
+                const anim = anime({
+                    targets: cloud,
+                    translateX: 400,
+                    duration: speed * 1000,
+                    easing: 'linear',
+                    complete: () => {
+                        cloud.remove();
+                        const idx = cloudAnimations.indexOf(anim);
+                        if (idx !== -1) cloudAnimations.splice(idx, 1);
+                    }
+                });
+                cloudAnimations.push(anim);
             }, 100);
-            
-            // Remove cloud after animation
-            setTimeout(() => {
-                cloud.remove();
-            }, speed * 1000);
         }
 
         function spawnBalloons() {
@@ -298,19 +314,25 @@
 
                     setTimeout(() => {
                         const h = document.getElementById("game-container").clientHeight;
-                        anime({
+                        const anim = anime({
                             targets: balloonGroup,
                             translateY: -h,
                             duration: balloonSpeed * 1000,
                             easing: 'linear',
-                            complete: () => balloonGroup.remove()
+                            complete: () => {
+                                balloonGroup.remove();
+                                const idx = balloonAnimations.indexOf(anim);
+                                if (idx !== -1) balloonAnimations.splice(idx, 1);
+                            }
                         });
+                        balloonAnimations.push(anim);
                     }, 100);
                 }
             }, 2000);
         }
 
         function popBalloon(balloonGroup, attachedItem) {
+            if (isPaused) return;
             let balloon = balloonGroup.querySelector(".balloon");
             balloon.onclick = null;
 
@@ -429,6 +451,11 @@
                 remainingCountdown = parseInt(countdownEl.innerText);
             }
             document.getAnimations().forEach(anim => anim.pause());
+            balloonAnimations.forEach(anim => anim.pause());
+            cloudAnimations.forEach(anim => anim.pause());
+            document.querySelectorAll('.balloon').forEach(b => b.style.pointerEvents = 'none');
+            const container = document.getElementById("game-container");
+            if (container) container.classList.add("paused");
             const btn = document.getElementById("pause-btn");
             if (btn) btn.innerText = "Resume";
         }
@@ -437,6 +464,11 @@
             if (!isPaused) return;
             isPaused = false;
             document.getAnimations().forEach(anim => anim.play());
+            balloonAnimations.forEach(anim => anim.play());
+            cloudAnimations.forEach(anim => anim.play());
+            document.querySelectorAll('.balloon').forEach(b => b.style.pointerEvents = 'auto');
+            const container = document.getElementById("game-container");
+            if (container) container.classList.remove("paused");
             spawnClouds();
             spawnBalloons();
             if (remainingCountdown !== null) {

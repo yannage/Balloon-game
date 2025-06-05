@@ -297,10 +297,14 @@
                     document.getElementById("game-container").appendChild(balloonGroup);
 
                     setTimeout(() => {
-                        balloonGroup.style.transitionDuration = `${balloonSpeed}s`;
                         const h = document.getElementById("game-container").clientHeight;
-                        balloonGroup.style.transform = `translateY(-${h}px)`;
-                        setTimeout(() => balloonGroup.remove(), balloonSpeed * 1000);
+                        anime({
+                            targets: balloonGroup,
+                            translateY: -h,
+                            duration: balloonSpeed * 1000,
+                            easing: 'linear',
+                            complete: () => balloonGroup.remove()
+                        });
                     }, 100);
                 }
             }, 2000);
@@ -328,8 +332,11 @@
                 animalsLeft = Math.max(animalsLeft - 1, 0); 
             }
 
-            document.getElementById("score").innerText = score;
-            document.getElementById("animals-left").innerText = animalsLeft;
+            const scoreEl = document.getElementById("score");
+            const animalsLeftEl = document.getElementById("animals-left");
+            scoreEl.innerText = score;
+            animalsLeftEl.innerText = animalsLeft;
+            anime({ targets: [scoreEl, animalsLeftEl], scale: [1.3, 1], duration: 300, easing: 'easeOutElastic(1, .8)' });
             updateSavedAnimalsDisplay();
 
                         const h = document.getElementById("game-container").clientHeight;
@@ -364,23 +371,34 @@
             setCookie("score", score, 7);
             const overlay = document.getElementById("level-complete-overlay");
             const countdownEl = document.getElementById("countdown");
-            overlay.classList.remove("fade-out");
-            overlay.classList.add("show");
             overlay.style.display = "flex";
+            anime({
+                targets: overlay,
+                opacity: [0, 1],
+                scale: [0.8, 1],
+                duration: 500,
+                easing: 'easeOutExpo'
+            });
             let count = 3;
             countdownEl.innerText = count;
             countdownInterval = setInterval(() => {
                 count--;
                 if (count > 0) {
                     countdownEl.innerText = count;
+                    anime({ targets: countdownEl, scale: [1.4, 1], duration: 300, easing: 'easeOutBack' });
                 } else {
                     clearInterval(countdownInterval);
-                    overlay.classList.add("fade-out");
-                    setTimeout(() => {
-                        overlay.style.display = "none";
-                        overlay.classList.remove("show", "fade-out");
-                        nextLevel();
-                    }, 500);
+                    anime({
+                        targets: overlay,
+                        opacity: [1, 0],
+                        scale: [1, 1.2],
+                        duration: 500,
+                        easing: 'easeInExpo',
+                        complete: () => {
+                            overlay.style.display = 'none';
+                            nextLevel();
+                        }
+                    });
                 }
             }, 1000);
         }
@@ -430,16 +448,22 @@
                         count--;
                         if (count > 0) {
                             countdownEl.innerText = count;
+                            anime({ targets: countdownEl, scale: [1.4, 1], duration: 300, easing: 'easeOutBack' });
                         } else {
                             clearInterval(countdownInterval);
                             const overlay = document.getElementById("level-complete-overlay");
                             if (overlay) {
-                                overlay.classList.add("fade-out");
-                                setTimeout(() => {
-                                    overlay.style.display = "none";
-                                    overlay.classList.remove("show", "fade-out");
-                                    nextLevel();
-                                }, 500);
+                                anime({
+                                    targets: overlay,
+                                    opacity: [1, 0],
+                                    scale: [1, 1.2],
+                                    duration: 500,
+                                    easing: 'easeInExpo',
+                                    complete: () => {
+                                        overlay.style.display = 'none';
+                                        nextLevel();
+                                    }
+                                });
                             }
                         }
                     }, 1000);

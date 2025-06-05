@@ -137,6 +137,7 @@
     <div id="game-container"></div>
 
     <button id="next-level" class="rounded px-4 py-2 bg-green-600 text-white mt-4" onclick="nextLevel()">Next Level</button>
+    <button id="pause-btn" class="rounded px-4 py-2 bg-blue-600 text-white mt-4 ml-2" onclick="togglePause()">Pause</button>
 
     <div id="saved-animals" class="mt-4">
         <h3 class="font-bold">Saved Animals:</h3>
@@ -172,6 +173,8 @@
         let countdownInterval;
         let savedAnimals = {};
         let usedPositions = [];
+        let isPaused = false;
+        let remainingCountdown = null;
 
         let animalData = {
             "🐌": { speed: 2.7, points: 20 },
@@ -389,6 +392,64 @@
             setCookie("level", level, 7);
             setCookie("score", score, 7);
             startGame();
+        }
+
+        function togglePause() {
+            if (isPaused) {
+                resumeGame();
+            } else {
+                pauseGame();
+            }
+        }
+
+        function pauseGame() {
+            if (isPaused) return;
+            isPaused = true;
+            clearInterval(balloonInterval);
+            clearInterval(cloudInterval);
+            clearInterval(countdownInterval);
+            const countdownEl = document.getElementById("countdown");
+            if (countdownEl && countdownEl.innerText) {
+                remainingCountdown = parseInt(countdownEl.innerText);
+            }
+            document.getAnimations().forEach(anim => anim.pause());
+            const btn = document.getElementById("pause-btn");
+            if (btn) btn.innerText = "Resume";
+        }
+
+        function resumeGame() {
+            if (!isPaused) return;
+            isPaused = false;
+            document.getAnimations().forEach(anim => anim.play());
+            spawnClouds();
+            spawnBalloons();
+            if (remainingCountdown !== null) {
+                let count = remainingCountdown;
+                const countdownEl = document.getElementById("countdown");
+                if (countdownEl) {
+                    countdownEl.innerText = count;
+                    countdownInterval = setInterval(() => {
+                        count--;
+                        if (count > 0) {
+                            countdownEl.innerText = count;
+                        } else {
+                            clearInterval(countdownInterval);
+                            const overlay = document.getElementById("level-complete-overlay");
+                            if (overlay) {
+                                overlay.classList.add("fade-out");
+                                setTimeout(() => {
+                                    overlay.style.display = "none";
+                                    overlay.classList.remove("show", "fade-out");
+                                    nextLevel();
+                                }, 500);
+                            }
+                        }
+                    }, 1000);
+                }
+                remainingCountdown = null;
+            }
+            const btn = document.getElementById("pause-btn");
+            if (btn) btn.innerText = "Pause";
         }
 
         startGame();

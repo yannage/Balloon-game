@@ -29,6 +29,10 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
             overflow: hidden;
         }
+        #game-container.paused {
+            filter: grayscale(1);
+            opacity: 0.6;
+        }
         .balloon-group {
             position: absolute;
             text-align: center;
@@ -434,6 +438,8 @@
                 anime.running.forEach(anim => anim.pause());
             }
             document.querySelectorAll('.balloon').forEach(b => b.style.pointerEvents = 'none');
+            const container = document.getElementById("game-container");
+            if (container) container.classList.add("paused");
             const btn = document.getElementById("pause-btn");
             if (btn) btn.innerText = "Resume";
         }
@@ -446,6 +452,8 @@
                 anime.running.forEach(anim => anim.play());
             }
             document.querySelectorAll('.balloon').forEach(b => b.style.pointerEvents = 'auto');
+            const container = document.getElementById("game-container");
+            if (container) container.classList.remove("paused");
             spawnClouds();
             spawnBalloons();
             if (remainingCountdown !== null) {

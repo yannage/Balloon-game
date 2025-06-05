@@ -4,21 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎈 Balloon Rescue Game 🎈</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Fredoka One', cursive;
             text-align: center;
-            background-color: skyblue;
+            background: linear-gradient(to bottom, skyblue, white);
             overflow: hidden;
         }
         #game-container {
             position: relative;
-            width: 300px;
-            height: 500px;
-            background-color: white;
+            width: 90vw;
+            max-width: 360px;
+            height: 70vh;
+            max-height: 540px;
+            background-color: rgba(255,255,255,0.9);
             margin: 20px auto;
             border: 2px solid black;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
             overflow: hidden;
         }
         .balloon-group {
@@ -31,6 +38,10 @@
             cursor: pointer;
             display: block;
             margin-bottom: -8px;
+            transition: transform 0.2s;
+        }
+        .balloon:hover {
+            transform: scale(1.2);
         }
         .rope {
             font-size: 18px;
@@ -48,6 +59,7 @@
             position: absolute;
             font-size: 40px;
             color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
             pointer-events: none;
         }
         #saved-animals {
@@ -59,27 +71,30 @@
             margin-top: 20px;
             padding: 10px;
             font-size: 18px;
-            background-color: green;
+            background-color: #38a169;
             color: white;
             border: none;
+            border-radius: 5px;
             cursor: pointer;
         }
     </style>
 </head>
-<body>
+<body class="flex flex-col items-center">
 
-    <h1>🎈 Balloon Rescue Game 🎈</h1>
-    <h2>Level: <span id="level">1</span></h2>
-    <h2>Score: <span id="score">0</span></h2>
-    <h2>Animals Left to Save: <span id="animals-left">10</span></h2>
-    <h3>Animal Values: <span id="animal-values"></span></h3>
+    <h1 class="text-3xl mt-4">🎈 Balloon Rescue Game 🎈</h1>
+    <div id="stats" class="flex flex-wrap justify-center gap-4 mt-4 text-xl">
+        <div>Level: <span id="level">1</span></div>
+        <div>Score: <span id="score">0</span></div>
+        <div>Animals Left: <span id="animals-left">10</span></div>
+    </div>
+    <h3 class="mt-2">Animal Values: <span id="animal-values"></span></h3>
 
     <div id="game-container"></div>
 
-    <button id="next-level" onclick="nextLevel()">Next Level</button>
+    <button id="next-level" class="rounded px-4 py-2 bg-green-600 text-white mt-4" onclick="nextLevel()">Next Level</button>
 
-    <div id="saved-animals">
-        <h3>Saved Animals:</h3>
+    <div id="saved-animals" class="mt-4">
+        <h3 class="font-bold">Saved Animals:</h3>
         <p id="saved-list"></p>
     </div>
 
@@ -232,7 +247,8 @@
 
                     setTimeout(() => {
                         balloonGroup.style.transitionDuration = `${balloonSpeed}s`;
-                        balloonGroup.style.transform = "translateY(-500px)";
+                        const h = document.getElementById("game-container").clientHeight;
+                        balloonGroup.style.transform = `translateY(-${h}px)`;
                         setTimeout(() => balloonGroup.remove(), balloonSpeed * 1000);
                     }, 100);
                 }
@@ -255,6 +271,7 @@
             document.getElementById("animals-left").innerText = animalsLeft;
             updateSavedAnimalsDisplay();
 
+                        const h = document.getElementById("game-container").clientHeight;
             balloonGroup.style.transform = "none";
             setTimeout(() => balloonGroup.remove(), 500);
 

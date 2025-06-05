@@ -429,6 +429,9 @@
                 remainingCountdown = parseInt(countdownEl.innerText);
             }
             document.getAnimations().forEach(anim => anim.pause());
+            if (window.anime && Array.isArray(anime.running)) {
+                anime.running.forEach(anim => anim.pause());
+            }
             const btn = document.getElementById("pause-btn");
             if (btn) btn.innerText = "Resume";
         }
@@ -437,6 +440,9 @@
             if (!isPaused) return;
             isPaused = false;
             document.getAnimations().forEach(anim => anim.play());
+            if (window.anime && Array.isArray(anime.running)) {
+                anime.running.forEach(anim => anim.play());
+            }
             spawnClouds();
             spawnBalloons();
             if (remainingCountdown !== null) {

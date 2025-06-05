@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <style>
         body {
             font-family: 'Fredoka One', cursive;
@@ -42,9 +43,6 @@
         }
         .balloon:hover {
             transform: scale(1.2);
-        }
-        .pop-animation {
-            animation: inflatePop 0.2s forwards;
         }
         .rope {
             font-size: 18px;
@@ -116,11 +114,6 @@
 
         @keyframes fadeOut {
             to { opacity: 0; transform: scale(1.2); }
-        }
-        @keyframes inflatePop {
-            0% { transform: scale(1); opacity: 1; }
-            60% { transform: scale(2); opacity: 1; }
-            100% { transform: scale(0); opacity: 0; }
         }
     </style>
 </head>
@@ -316,11 +309,16 @@
         function popBalloon(balloonGroup, attachedItem) {
             let balloon = balloonGroup.querySelector(".balloon");
             balloon.onclick = null;
-            balloon.classList.add("pop-animation");
 
+            anime({
+                targets: balloon,
+                scale: [1, 2, 0],
+                duration: 200,
+                easing: 'easeInOutQuad'
+            });
             setTimeout(() => {
                 balloon.innerHTML = "💥";
-            }, 70);
+            }, 120);
 
             if (attachedItem === "🪨") {
                 score -= 10;

@@ -336,11 +336,23 @@
                             duration: balloonSpeed * 1000,
                             easing: 'easeInOutSine',
                             complete: () => {
-                                balloonGroup.remove();
-                                const idx = balloonAnimations.indexOf(anim);
-                                if (idx !== -1) balloonAnimations.splice(idx, 1);
-                                const idx2 = balloonAnimations.indexOf(swayAnim);
-                                if (idx2 !== -1) balloonAnimations.splice(idx2, 1);
+                                swayAnim.pause();
+                                const fadeAnim = anime({
+                                    targets: balloonGroup,
+                                    opacity: 0,
+                                    duration: 500,
+                                    easing: 'linear',
+                                    complete: () => {
+                                        balloonGroup.remove();
+                                        const idx = balloonAnimations.indexOf(anim);
+                                        if (idx !== -1) balloonAnimations.splice(idx, 1);
+                                        const idx2 = balloonAnimations.indexOf(swayAnim);
+                                        if (idx2 !== -1) balloonAnimations.splice(idx2, 1);
+                                        const idx3 = balloonAnimations.indexOf(fadeAnim);
+                                        if (idx3 !== -1) balloonAnimations.splice(idx3, 1);
+                                    }
+                                });
+                                balloonAnimations.push(fadeAnim);
                             }
                         });
                         balloonAnimations.push(anim, swayAnim);

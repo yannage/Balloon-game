@@ -306,7 +306,8 @@
 
                     usedPositions.push(leftPosition);
                     balloonGroup.style.left = leftPosition + "px";
-                    balloonGroup.style.bottom = "0px";
+                    balloonGroup.style.bottom = "-50px";
+                    balloonGroup.style.opacity = "0";
 
                     balloon.onclick = () => popBalloon(balloonGroup, selectedAnimal);
 
@@ -314,18 +315,35 @@
 
                     setTimeout(() => {
                         const h = document.getElementById("game-container").clientHeight;
+                        anime({
+                            targets: balloonGroup,
+                            opacity: [0, 1],
+                            duration: 800,
+                            easing: 'linear'
+                        });
+                        const swayAnim = anime({
+                            targets: balloonGroup,
+                            translateX: ['-15px', '15px'],
+                            duration: 3000,
+                            direction: 'alternate',
+                            loop: true,
+                            easing: 'easeInOutSine',
+                            delay: Math.random() * 1000
+                        });
                         const anim = anime({
                             targets: balloonGroup,
                             translateY: -h,
                             duration: balloonSpeed * 1000,
-                            easing: 'linear',
+                            easing: 'easeInOutSine',
                             complete: () => {
                                 balloonGroup.remove();
                                 const idx = balloonAnimations.indexOf(anim);
                                 if (idx !== -1) balloonAnimations.splice(idx, 1);
+                                const idx2 = balloonAnimations.indexOf(swayAnim);
+                                if (idx2 !== -1) balloonAnimations.splice(idx2, 1);
                             }
                         });
-                        balloonAnimations.push(anim);
+                        balloonAnimations.push(anim, swayAnim);
                     }, 100);
                 }
             }, 2000);

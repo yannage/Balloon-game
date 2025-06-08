@@ -169,6 +169,7 @@
         let cloudInterval;
         let countdownInterval;
         let balloonAnimations = [];
+        let balloonTimeouts = [];
         let cloudAnimations = [];
         let savedAnimals = {};
         let usedPositions = [];
@@ -191,6 +192,11 @@
             clearInterval(balloonInterval);
             clearInterval(cloudInterval);
             clearInterval(countdownInterval);
+            balloonTimeouts.forEach(id => clearTimeout(id));
+            balloonTimeouts = [];
+            document.querySelectorAll('.balloon-group').forEach(bg => {
+                if (bg.dataset.started === 'false') bg.remove();
+            });
             balloonAnimations.forEach(anim => anim.pause());
             balloonAnimations = [];
             cloudAnimations.forEach(anim => anim.pause());
@@ -272,6 +278,7 @@
 
         function spawnBalloons() {
             balloonInterval = setInterval(() => {
+                if (isPaused) return;
                 let numBalloons = Math.floor(Math.random() * 3) + 1;
                 usedPositions = [];
 
@@ -296,6 +303,7 @@
                     balloonGroup.appendChild(balloon);
                     balloonGroup.appendChild(rope);
                     balloonGroup.appendChild(attached);
+                    balloonGroup.dataset.started = "false";
 
                     let balloonSpeed = animalData[selectedAnimal].speed;
 
@@ -313,7 +321,13 @@
 
                     document.getElementById("game-container").appendChild(balloonGroup);
 
-                    setTimeout(() => {
+                    const timeoutId = setTimeout(() => {
+                        balloonTimeouts = balloonTimeouts.filter(id => id !== timeoutId);
+                        if (isPaused) {
+                            balloonGroup.remove();
+                            return;
+                        }
+                        balloonGroup.dataset.started = "true";
                         const h = document.getElementById("game-container").clientHeight;
                         anime({
                             targets: balloonGroup,
@@ -476,6 +490,11 @@
             clearInterval(balloonInterval);
             clearInterval(cloudInterval);
             clearInterval(countdownInterval);
+            balloonTimeouts.forEach(id => clearTimeout(id));
+            balloonTimeouts = [];
+            document.querySelectorAll('.balloon-group').forEach(bg => {
+                if (bg.dataset.started === 'false') bg.remove();
+            });
             const countdownEl = document.getElementById("countdown");
             if (countdownEl && countdownEl.innerText) {
                 remainingCountdown = parseInt(countdownEl.innerText);

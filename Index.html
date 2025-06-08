@@ -38,6 +38,9 @@
             text-align: center;
             transition: transform linear;
         }
+        .sway-wrapper {
+            display: inline-block;
+        }
         .balloon {
             font-size: 30px;
             cursor: pointer;
@@ -279,6 +282,9 @@
                     let balloonGroup = document.createElement("div");
                     balloonGroup.classList.add("balloon-group");
 
+                    let swayWrapper = document.createElement("div");
+                    swayWrapper.classList.add("sway-wrapper");
+
                     let balloon = document.createElement("div");
                     balloon.classList.add("balloon");
                     let selectedBalloon = balloonColors[Math.floor(Math.random() * balloonColors.length)];
@@ -293,9 +299,10 @@
                     let selectedAnimal = animals[Math.floor(Math.random() * animals.length)];
                     attached.innerHTML = selectedAnimal;
 
-                    balloonGroup.appendChild(balloon);
-                    balloonGroup.appendChild(rope);
-                    balloonGroup.appendChild(attached);
+                    swayWrapper.appendChild(balloon);
+                    swayWrapper.appendChild(rope);
+                    swayWrapper.appendChild(attached);
+                    balloonGroup.appendChild(swayWrapper);
 
                     let balloonSpeed = animalData[selectedAnimal].speed;
 
@@ -322,7 +329,7 @@
                             easing: 'linear'
                         });
                         const swayAnim = anime({
-                            targets: balloonGroup,
+                            targets: swayWrapper,
                             translateX: ['-15px', '15px'],
                             duration: 3000,
                             direction: 'alternate',

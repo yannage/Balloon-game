@@ -37,6 +37,7 @@
             position: absolute;
             text-align: center;
             transition: transform linear;
+            cursor: pointer; /* easier to see it's clickable */
         }
         .sway-wrapper {
             display: inline-block;
@@ -349,7 +350,8 @@
                     balloonGroup.style.bottom = "-50px";
                     balloonGroup.style.opacity = "0";
 
-                    balloon.onclick = () => popBalloon(balloonGroup, selectedAnimal);
+                    // Make entire group clickable for easier tapping
+                    balloonGroup.onclick = () => popBalloon(balloonGroup, selectedAnimal);
 
                     document.getElementById("game-container").appendChild(balloonGroup);
 
@@ -404,7 +406,8 @@
         function popBalloon(balloonGroup, attachedItem) {
             if (isPaused) return;
             let balloon = balloonGroup.querySelector(".balloon");
-            balloon.onclick = null;
+            // Disable further clicks once popped
+            balloonGroup.onclick = null;
 
             document.getElementById('pop-sound').play();
 
@@ -578,6 +581,7 @@
             balloonAnimations.forEach(anim => anim.pause());
             cloudAnimations.forEach(anim => anim.pause());
             document.querySelectorAll('.balloon').forEach(b => b.style.pointerEvents = 'none');
+            document.querySelectorAll('.balloon-group').forEach(bg => bg.style.pointerEvents = 'none');
             const container = document.getElementById("game-container");
             if (container) container.classList.add("paused");
             const btn = document.getElementById("pause-btn");
@@ -590,6 +594,7 @@
             balloonAnimations.forEach(anim => anim.play());
             cloudAnimations.forEach(anim => anim.play());
             document.querySelectorAll('.balloon').forEach(b => b.style.pointerEvents = 'auto');
+            document.querySelectorAll('.balloon-group').forEach(bg => bg.style.pointerEvents = 'auto');
             const container = document.getElementById("game-container");
             if (container) container.classList.remove("paused");
             spawnClouds();

@@ -146,9 +146,7 @@
         <p id="saved-list"></p>
     </div>
 
-    <audio id="pop-sound" src="https://assets.mixkit.co/active_storage/sfx/1062/1062-preview.mp3"></audio>
-    <audio id="cheer-sound" src="https://assets.mixkit.co/active_storage/sfx/522/522-preview.mp3"></audio>
-    <audio id="rock-sound" src="https://assets.mixkit.co/active_storage/sfx/1782/1782-preview.mp3"></audio>
+    <audio id="pop-sound" src="https://assets.mixkit.co/active_storage/sfx/2356/2356-preview.mp3"></audio>
 
     <script>
         function setCookie(name, value, days) {
@@ -409,8 +407,6 @@
             // Disable further clicks once popped
             balloonGroup.onclick = null;
 
-            document.getElementById('pop-sound').play();
-
             anime({
                 targets: balloon,
                 scale: [1, 2, 0],
@@ -419,6 +415,8 @@
             });
             setTimeout(() => {
                 balloon.innerHTML = "💥";
+                const pop = document.getElementById('pop-sound');
+                if (pop) { pop.currentTime = 0; pop.play(); }
             }, 120);
 
             if (attachedItem === "🪨") {
@@ -427,13 +425,11 @@
                 } else {
                     score -= 10;
                 }
-                document.getElementById('rock-sound').play();
                 comboCount = 0;
                 comboMultiplier = 1;
                 document.getElementById('combo').innerText = '';
             } else if (powerUps.includes(attachedItem)) {
                 applyPowerUp(attachedItem);
-                document.getElementById('cheer-sound').play();
             } else if (hazards.includes(attachedItem)) {
                 score -= 15;
                 comboCount = 0;
@@ -447,7 +443,6 @@
                 savedAnimals[attachedItem] = (savedAnimals[attachedItem] || 0) + 1;
                 animalsLeft = Math.max(animalsLeft - 1, 0);
                 registerCombo();
-                document.getElementById('cheer-sound').play();
             }
 
             const scoreEl = document.getElementById("score");

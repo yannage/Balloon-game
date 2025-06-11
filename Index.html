@@ -253,6 +253,7 @@
             
             // Set up cloud spawning interval
             cloudInterval = setInterval(() => {
+                if (isPaused) return;
                 if (document.querySelectorAll('.cloud').length < 5) {
                     createCloud();
                 }
@@ -275,6 +276,10 @@
             cloud.style.transform = 'translateX(0)';
 
             setTimeout(() => {
+                if (isPaused) {
+                    cloud.remove();
+                    return;
+                }
                 const anim = anime({
                     targets: cloud,
                     translateX: 400,
@@ -293,6 +298,7 @@
         function spawnBalloons() {
             const interval = Math.max(2000 - (level - 1) * 100, 800);
             balloonInterval = setInterval(() => {
+                if (isPaused) return;
                 let numBalloons = Math.floor(Math.random() * 3) + 1;
                 usedPositions = [];
 
@@ -354,6 +360,10 @@
                     document.getElementById("game-container").appendChild(balloonGroup);
 
                     setTimeout(() => {
+                        if (isPaused) {
+                            balloonGroup.remove();
+                            return;
+                        }
                         const h = document.getElementById("game-container").clientHeight;
                         anime({
                             targets: balloonGroup,

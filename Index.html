@@ -41,6 +41,14 @@
         }
         .sway-wrapper {
             display: inline-block;
+            position: relative;
+        }
+        .hat {
+            position: absolute;
+            top: -26px;
+            left: 50%;
+            transform: translateX(-50%);
+            pointer-events: none;
         }
         .balloon {
             font-size: 30px;
@@ -186,9 +194,19 @@
         </div>
     </div>
 
+    <div id="shop-modal" class="hidden fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-40">
+        <div class="bg-white p-4 rounded w-72 text-center">
+            <h3 class="text-xl mb-2 font-bold">Hat Shop</h3>
+            <div id="hat-list" class="mb-4"></div>
+            <button class="mt-2 px-4 py-2 bg-blue-600 text-white rounded" onclick="closeShop()">Close</button>
+        </div>
+    </div>
+
     <div id="main-menu" class="fixed inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center text-white z-50">
         <h2 class="text-3xl mb-2">Balloon Rescue Game</h2>
         <div>Gold: <span id="player-gold-display">0</span></div>
+        <select id="hat-select" class="mt-2 text-black"></select>
+        <button class="mt-2 px-4 py-2 bg-yellow-600 rounded" onclick="openShop()">Shop</button>
         <button class="mt-4 px-4 py-2 bg-green-600 rounded" onclick="startRun()">Start Run</button>
     </div>
 
@@ -240,6 +258,15 @@
         let animalsRescuedThisRun = 0;
         let rocksHitThisRun = 0;
         let playerGold = parseInt(localStorage.getItem("playerGold")) || 0;
+        const hatEmojis = { cap: "🧢", crown: "👑", wizard: "🎩" };
+        let hats = [
+            { id: "cap", name: "Cap", price: 50, unlocked: false },
+            { id: "crown", name: "Crown", price: 100, unlocked: false },
+            { id: "wizard", name: "Wizard Hat", price: 150, unlocked: false }
+        ];
+        const unlocked = JSON.parse(localStorage.getItem("unlockedHats")) || ["none"];
+        hats.forEach(h => { if (unlocked.includes(h.id)) h.unlocked = true; });
+        let selectedHat = localStorage.getItem("selectedHat") || "none";
 
         let animalData = {
             "🐌": { speed: 2.7, points: 20, rarity: "rare" },
@@ -416,6 +443,12 @@
                     attached.innerHTML = selectedAnimal;
                     balloonGroup.dataset.attached = selectedAnimal;
 
+                    if (selectedHat !== "none") {
+                        const hatEl = document.createElement("div");
+                        hatEl.classList.add("hat");
+                        hatEl.innerHTML = hatEmojis[selectedHat];
+                        swayWrapper.appendChild(hatEl);
+                    }
                     swayWrapper.appendChild(balloon);
                     swayWrapper.appendChild(rope);
                     swayWrapper.appendChild(attached);
@@ -862,9 +895,78 @@
             setCookie("level", level, 7);
             document.getElementById("main-menu").classList.remove("hidden");
             updatePlayerGoldDisplay();
+            updateHatDropdown();
+        }
+
+        function openShop() {
+            updateShop();
+            document.getElementById("shop-modal").classList.remove("hidden");
+        }
+
+        function closeShop() {
+            document.getElementById("shop-modal").classList.add("hidden");
+        }
+
+        function updateShop() {
+            const list = document.getElementById("hat-list");
+            list.innerHTML = "";
+            hats.forEach(h => {
+                if (h.id === "none") return;
+                const row = document.createElement("div");
+                row.className = "flex justify-between items-center mb-2";
+                const name = document.createElement("span");
+                name.innerText = `${hatEmojis[h.id]} ${h.name} - ${h.price}g`;
+                const btn = document.createElement("button");
+                btn.className = "px-2 py-1 bg-green-600 text-white rounded";
+                btn.innerText = h.unlocked ? "Owned" : "Buy";
+                btn.disabled = h.unlocked || playerGold < h.price;
+                btn.onclick = () => purchaseHat(h.id);
+                row.appendChild(name);
+                row.appendChild(btn);
+                list.appendChild(row);
+            });
+            updatePlayerGoldDisplay();
+        }
+
+        function purchaseHat(id) {
+            const hat = hats.find(h => h.id === id);
+            if (!hat || hat.unlocked || playerGold < hat.price) return;
+            playerGold -= hat.price;
+            hat.unlocked = true;
+            localStorage.setItem("playerGold", playerGold);
+            const unlocked = hats.filter(h => h.unlocked).map(h => h.id);
+            localStorage.setItem("unlockedHats", JSON.stringify(unlocked));
+            updateShop();
+            updateHatDropdown();
+        }
+
+        function updateHatDropdown() {
+            const sel = document.getElementById("hat-select");
+            if (!sel) return;
+            sel.innerHTML = "";
+            const noneOpt = document.createElement("option");
+            noneOpt.value = "none";
+            noneOpt.text = "No Hat";
+            if (selectedHat === "none") noneOpt.selected = true;
+            sel.appendChild(noneOpt);
+            hats.filter(h => h.unlocked).forEach(h => {
+                const opt = document.createElement("option");
+                opt.value = h.id;
+                opt.text = `${hatEmojis[h.id]} ${h.name}`;
+                if (h.id === selectedHat) opt.selected = true;
+                sel.appendChild(opt);
+            });
         }
 
         updatePlayerGoldDisplay();
+        updateHatDropdown();
+        const hatSel = document.getElementById("hat-select");
+        if (hatSel) {
+            hatSel.addEventListener('change', e => {
+                selectedHat = e.target.value;
+                localStorage.setItem("selectedHat", selectedHat);
+            });
+        }
     </script>
 
 </body>

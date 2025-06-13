@@ -16,6 +16,18 @@
             background: linear-gradient(to bottom, skyblue, white);
             overflow: hidden;
         }
+        body.fever-mode {
+            background: linear-gradient(to bottom, gold, orange);
+            animation: flash 0.5s alternate infinite;
+        }
+        #game-container.fever {
+            box-shadow: 0 0 20px 5px gold;
+            border-color: gold;
+        }
+        @keyframes flash {
+            from { filter: brightness(1); }
+            to { filter: brightness(1.3); }
+        }
         #game-container {
             position: relative;
             width: 90vw;
@@ -147,6 +159,7 @@
     </div>
 
     <audio id="pop-sound" src="https://assets.mixkit.co/active_storage/sfx/2356/2356-preview.mp3"></audio>
+    <audio id="fever-sound" src="https://assets.mixkit.co/active_storage/sfx/1800/1800-preview.mp3"></audio>
 
     <script>
         function setCookie(name, value, days) {
@@ -186,6 +199,9 @@
         let comboCount = 0;
         let comboTimer;
         let comboMultiplier = 1;
+        let feverMode = false;
+        let feverTimer;
+        const FEVER_THRESHOLD = 6;
 
         let animalData = {
             "🐌": { speed: 2.7, points: 20 },
@@ -205,6 +221,7 @@
             clearInterval(balloonInterval);
             clearInterval(cloudInterval);
             clearInterval(countdownInterval);
+            deactivateFeverMode();
             balloonAnimations.forEach(anim => anim.pause());
             balloonAnimations = [];
             cloudAnimations.forEach(anim => anim.pause());
@@ -296,7 +313,9 @@
         }
 
         function spawnBalloons() {
-            const interval = Math.max(2000 - (level - 1) * 100, 800);
+            const baseInterval = Math.max(2000 - (level - 1) * 100, 800);
+            const interval = feverMode ? baseInterval / 2 : baseInterval;
+            clearInterval(balloonInterval);
             balloonInterval = setInterval(() => {
                 if (isPaused) return;
                 let numBalloons = Math.floor(Math.random() * 3) + 1;
@@ -447,7 +466,7 @@
                 document.getElementById('combo').innerText = '';
             } else {
                 let pts = animalData[attachedItem].points;
-                if (doublePoints) pts *= 2;
+                if (doublePoints || feverMode) pts *= 2;
                 pts = Math.floor(pts * comboMultiplier);
                 score += pts;
                 savedAnimals[attachedItem] = (savedAnimals[attachedItem] || 0) + 1;
@@ -500,6 +519,7 @@
         }
 
         function registerCombo() {
+            if (feverMode) return;
             comboCount++;
             comboMultiplier = 1 + Math.floor(comboCount / 3) * 0.5;
             showComboMessage();
@@ -509,13 +529,50 @@
                 comboMultiplier = 1;
                 document.getElementById("combo").innerText = "";
             }, 1000);
+            if (comboCount >= FEVER_THRESHOLD) {
+                activateFeverMode();
+            }
         }
 
         function showComboMessage() {
-            if (comboCount < 3) return;
-            const msg = comboCount >= 6 ? "Amazing!" : "Great!";
             const el = document.getElementById("combo");
+            if (feverMode) {
+                el.innerText = "FEVER MODE!";
+                return;
+            }
+            if (comboCount < 3) {
+                el.innerText = "";
+                return;
+            }
+            const msg = comboCount >= FEVER_THRESHOLD ? "FEVER READY!" : (comboCount >= 6 ? "Amazing!" : "Great!");
             el.innerText = msg + ` x${comboMultiplier.toFixed(1)}`;
+        }
+
+        function activateFeverMode() {
+            feverMode = true;
+            doublePoints = true;
+            document.body.classList.add('fever-mode');
+            const container = document.getElementById('game-container');
+            if (container) container.classList.add('fever');
+            const audio = document.getElementById('fever-sound');
+            if (audio) { audio.currentTime = 0; audio.play(); }
+            showComboMessage();
+            spawnBalloons();
+            clearTimeout(feverTimer);
+            feverTimer = setTimeout(deactivateFeverMode, 7000);
+        }
+
+        function deactivateFeverMode() {
+            feverMode = false;
+            doublePoints = false;
+            clearTimeout(feverTimer);
+            comboCount = 0;
+            comboMultiplier = 1;
+            document.getElementById('combo').innerText = '';
+            document.body.classList.remove('fever-mode');
+            const container = document.getElementById('game-container');
+            if (container) container.classList.remove('fever');
+            spawnBalloons();
         }
 
        function endLevel() {

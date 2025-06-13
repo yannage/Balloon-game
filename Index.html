@@ -242,18 +242,33 @@
         let playerGold = parseInt(localStorage.getItem("playerGold")) || 0;
 
         let animalData = {
-            "🐌": { speed: 2.7, points: 20 },
-            "🐢": { speed: 4.4, points: 5 },
-            "🐿️": { speed: 3.8, points: 10 },
-            "🦎": { speed: 3.4, points: 15 },
-            "🐥": { speed: 3.6, points: 12 },
-            "🪨": { speed: 3.5, points: -10 }
+            "🐌": { speed: 2.7, points: 20, rarity: "rare" },
+            "🐢": { speed: 4.4, points: 5, rarity: "common" },
+            "🐿️": { speed: 3.8, points: 10, rarity: "common" },
+            "🦎": { speed: 3.4, points: 15, rarity: "uncommon" },
+            "🐥": { speed: 3.6, points: 12, rarity: "uncommon" },
+            "🦄": { speed: 2.5, points: 50, rarity: "legendary" },
+            "🪨": { speed: 3.5, points: -10, rarity: "common" }
         };
 
         let balloonColors = ["🟠", "🟡", "🟢", "🟣", "🟤", "🔴", "🔵", "⚪", "⚫"];
         let animals = Object.keys(animalData);
         let powerUps = ["✨", "🧊", "🛡️"];
         let hazards = ["💣"];
+
+        const rarityWeights = { common: 5, uncommon: 3, rare: 1, legendary: 0.2 };
+
+        function getRandomAnimal() {
+            const available = animals.filter(a => a !== "🪨" && !(animalData[a].rarity === "legendary" && level < 10));
+            let total = 0;
+            available.forEach(a => { total += rarityWeights[animalData[a].rarity] || 1; });
+            let r = Math.random() * total;
+            for (let a of available) {
+                r -= rarityWeights[animalData[a].rarity] || 1;
+                if (r <= 0) return a;
+            }
+            return available[0];
+        }
 
         function startGame() {
             if (level === 1) {
@@ -396,8 +411,7 @@
                     } else if (Math.random() < rockChance) {
                         selectedAnimal = "🪨";
                     } else {
-                        const nonRock = animals.filter(a => a !== "🪨");
-                        selectedAnimal = nonRock[Math.floor(Math.random() * nonRock.length)];
+                        selectedAnimal = getRandomAnimal();
                     }
                     attached.innerHTML = selectedAnimal;
                     balloonGroup.dataset.attached = selectedAnimal;
@@ -606,12 +620,19 @@
             el.innerText = msg + ` x${comboMultiplier.toFixed(1)}`;
         }
 
+        const rarityColors = { common: '#6B7280', uncommon: '#16A34A', rare: '#2563EB', legendary: '#A21CAF' };
+        const rarityStars = { common: '⭐', uncommon: '⭐⭐', rare: '⭐⭐⭐', legendary: '🌟' };
+
         function updateAlbum() {
             const albumList = document.getElementById("album-list");
             if (!albumList) return;
             albumList.innerHTML = "";
             for (let animal in animalTotals) {
-                albumList.innerHTML += "<div>" + animal + " x" + animalTotals[animal] + " - " + (animalDescriptions[animal] || "") + "</div>";
+                const rarity = animalData[animal]?.rarity || 'common';
+                const color = rarityColors[rarity] || '#6B7280';
+                const stars = rarityStars[rarity] || '';
+                const desc = animalDescriptions[animal] || '';
+                albumList.innerHTML += `<div class="flex justify-between border-b py-1"><span>${animal} x${animalTotals[animal]} - ${desc}</span><span style="color:${color}">${stars}</span></div>`;
             }
             if (albumList.innerHTML === "") albumList.innerHTML = "No animals saved yet.";
         }

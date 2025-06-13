@@ -549,11 +549,28 @@
 
         function popBalloon(balloonGroup, attachedItem) {
             if (isPaused || !canPop) return;
+            const comp = window.getComputedStyle(balloonGroup);
+            const matrix = new DOMMatrixReadOnly(comp.transform);
+            const bottom = parseFloat(comp.bottom);
+            const left = parseFloat(comp.left);
+            if (!isNaN(matrix.m41)) balloonGroup.style.left = (left + matrix.m41) + 'px';
+            if (!isNaN(matrix.m42)) balloonGroup.style.bottom = (bottom - matrix.m42) + 'px';
+            balloonGroup.style.transform = 'none';
             balloonGroup.popped = true;
             if (balloonGroup._anim) balloonGroup._anim.pause();
             if (balloonGroup._sway) balloonGroup._sway.pause();
+            const sway = balloonGroup.querySelector('.sway-wrapper');
+            if (sway) {
+                const swComp = window.getComputedStyle(sway);
+                const swMatrix = new DOMMatrixReadOnly(swComp.transform);
+                if (!isNaN(swMatrix.m41)) {
+                    sway.style.transform = `translateX(${swMatrix.m41}px)`;
+                } else {
+                    sway.style.transform = 'none';
+                }
+            }
             anime.remove(balloonGroup);
-            anime.remove(balloonGroup.querySelector('.sway-wrapper'));
+            if (sway) anime.remove(sway);
             let balloon = balloonGroup.querySelector(".balloon");
             // Disable further clicks once popped
             balloonGroup.onclick = null;
@@ -622,7 +639,6 @@
             anime({ targets: [scoreEl, animalsLeftEl], scale: [1.3, 1], duration: 300, easing: 'easeOutElastic(1, .8)' });
             updateSavedAnimalsDisplay();
 
-                        const h = document.getElementById("game-container").clientHeight;
             balloonGroup.style.transform = "none";
             setTimeout(() => {
                 balloonGroup.remove();

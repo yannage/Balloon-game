@@ -123,6 +123,15 @@
         @keyframes fadeOut {
             to { opacity: 0; transform: scale(1.2); }
         }
+
+        @keyframes feverFlash {
+            0%, 100% { background-color: rgba(255,255,0,0.2); }
+            50% { background-color: rgba(255,255,0,0.7); }
+        }
+
+        #game-container.fever {
+            animation: feverFlash 0.5s infinite;
+        }
     </style>
 </head>
 <body class="flex flex-col items-center">
@@ -148,6 +157,7 @@
     </div>
 
     <audio id="pop-sound" src="https://assets.mixkit.co/active_storage/sfx/2356/2356-preview.mp3"></audio>
+    <audio id="fever-sound" src="https://assets.mixkit.co/active_storage/sfx/4228/4228-preview.mp3"></audio>
     <div id="animal-album-modal" class="hidden fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-30">
         <div class="bg-white p-4 rounded w-72">
             <h3 class="text-xl mb-2 font-bold">Animal Album</h3>
@@ -196,6 +206,8 @@
         let comboCount = 0;
         let comboTimer;
         let comboMultiplier = 1;
+        let feverMode = false;
+        let feverTimer;
 
         let animalData = {
             "🐌": { speed: 2.7, points: 20 },
@@ -219,7 +231,11 @@
             balloonAnimations = [];
             cloudAnimations.forEach(anim => anim.pause());
             cloudAnimations = [];
+            if (feverTimer) clearTimeout(feverTimer);
+            feverMode = false;
+            doublePoints = false;
             const container = document.getElementById("game-container");
+            container.classList.remove("fever");
             container.innerHTML = `
                 <div id="level-complete-overlay">
                     <div>Level Complete!</div>
@@ -248,7 +264,7 @@
 
             updateAnimalValues();
             spawnClouds();
-            spawnBalloons();
+            spawnBalloons(feverMode ? 0.5 : 1);
         }
 
         function updateAnimalValues() {
@@ -306,8 +322,8 @@
             }, 100);
         }
 
-        function spawnBalloons() {
-            const interval = Math.max(2000 - (level - 1) * 100, 800);
+        function spawnBalloons(rate = 1) {
+            const interval = Math.max(2000 - (level - 1) * 100, 800) * rate;
             balloonInterval = setInterval(() => {
                 if (isPaused) return;
                 let numBalloons = Math.floor(Math.random() * 3) + 1;
@@ -516,20 +532,31 @@
         function registerCombo() {
             comboCount++;
             comboMultiplier = 1 + Math.floor(comboCount / 3) * 0.5;
+            if (!feverMode && comboCount > 6) {
+                activateFeverMode();
+            }
             showComboMessage();
             clearTimeout(comboTimer);
             comboTimer = setTimeout(() => {
-                comboCount = 0;
-                comboMultiplier = 1;
-                document.getElementById("combo").innerText = "";
+                if (!feverMode) {
+                    comboCount = 0;
+                    comboMultiplier = 1;
+                    document.getElementById("combo").innerText = "";
+                }
             }, 1000);
         }
 
         function showComboMessage() {
-            if (comboCount < 3) return;
-            const msg = comboCount >= 6 ? "Amazing!" : "Great!";
             const el = document.getElementById("combo");
-            el.innerText = msg + ` x${comboMultiplier.toFixed(1)}`;
+            if (feverMode) {
+                el.innerText = "FEVER MODE!";
+            } else if (comboCount >= 6) {
+                el.innerText = "FEVER READY!";
+            } else if (comboCount >= 3) {
+                el.innerText = "Great! x" + comboMultiplier.toFixed(1);
+            } else {
+                el.innerText = "";
+            }
         }
 
         function updateAlbum() {
@@ -549,6 +576,32 @@
 
         function closeAlbum() {
             document.getElementById("animal-album-modal").classList.add("hidden");
+        }
+
+        function activateFeverMode() {
+            if (feverMode) return;
+            feverMode = true;
+            doublePoints = true;
+            clearInterval(balloonInterval);
+            spawnBalloons(0.5);
+            const container = document.getElementById("game-container");
+            container.classList.add("fever");
+            const fs = document.getElementById("fever-sound");
+            if (fs) { fs.currentTime = 0; fs.play(); }
+            showComboMessage();
+            feverTimer = setTimeout(deactivateFeverMode, 7000);
+        }
+
+        function deactivateFeverMode() {
+            feverMode = false;
+            doublePoints = false;
+            clearInterval(balloonInterval);
+            spawnBalloons();
+            const container = document.getElementById("game-container");
+            container.classList.remove("fever");
+            comboCount = 0;
+            comboMultiplier = 1;
+            document.getElementById("combo").innerText = "";
         }
 
 
@@ -637,7 +690,7 @@
             const container = document.getElementById("game-container");
             if (container) container.classList.remove("paused");
             spawnClouds();
-            spawnBalloons();
+            spawnBalloons(feverMode ? 0.5 : 1);
             if (remainingCountdown !== null) {
                 let count = remainingCountdown;
                 const countdownEl = document.getElementById("countdown");

@@ -176,6 +176,22 @@
         </div>
     </div>
 
+    <div id="run-summary-modal" class="hidden fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-40">
+        <div class="bg-white p-4 rounded w-72 text-center">
+            <h3 class="text-xl mb-2 font-bold">Run Summary</h3>
+            <p>Score: <span id="run-summary-score"></span></p>
+            <p>Animals Rescued: <span id="run-summary-animals"></span></p>
+            <p>Gold Earned: <span id="run-summary-gold"></span></p>
+            <button class="mt-4 px-4 py-2 bg-blue-600 text-white rounded" onclick="closeRunSummary()">Close</button>
+        </div>
+    </div>
+
+    <div id="main-menu" class="fixed inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center text-white z-50">
+        <h2 class="text-3xl mb-2">Balloon Rescue Game</h2>
+        <div>Gold: <span id="player-gold-display">0</span></div>
+        <button class="mt-4 px-4 py-2 bg-green-600 rounded" onclick="startRun()">Start Run</button>
+    </div>
+
     <script>
         function setCookie(name, value, days) {
             let expires = "";
@@ -218,6 +234,13 @@
         let comboMultiplier = 1;
         let selectedBalloonGroup = null;
 
+        const LEVEL_CAP = 5;
+        let runScore = 0;
+        let runGold = 0;
+        let animalsRescuedThisRun = 0;
+        let rocksHitThisRun = 0;
+        let playerGold = parseInt(localStorage.getItem("playerGold")) || 0;
+
         let animalData = {
             "🐌": { speed: 2.7, points: 20 },
             "🐢": { speed: 4.4, points: 5 },
@@ -233,9 +256,17 @@
         let hazards = ["💣"];
 
         function startGame() {
+            if (level === 1) {
+                runScore = 0;
+                runGold = 0;
+                animalsRescuedThisRun = 0;
+                rocksHitThisRun = 0;
+            }
             clearInterval(balloonInterval);
             clearInterval(cloudInterval);
             clearInterval(countdownInterval);
+            document.getElementById("main-menu").classList.add("hidden");
+            document.getElementById("run-summary-modal").classList.add("hidden");
             balloonAnimations.forEach(anim => anim.pause());
             balloonAnimations = [];
             cloudAnimations.forEach(anim => anim.pause());
@@ -463,11 +494,15 @@
                 if (pop) { pop.currentTime = 0; pop.play(); }
             }, 120);
 
+            let delta = 0;
+
             if (attachedItem === "🪨") {
                 if (shield) {
                     shield = false;
                 } else {
-                    score -= 10;
+                    delta = -10;
+                    score += delta;
+                    rocksHitThisRun++;
                 }
                 comboCount = 0;
                 comboMultiplier = 1;
@@ -475,7 +510,8 @@
             } else if (powerUps.includes(attachedItem)) {
                 applyPowerUp(attachedItem);
             } else if (hazards.includes(attachedItem)) {
-                score -= 15;
+                delta = -15;
+                score += delta;
                 comboCount = 0;
                 comboMultiplier = 1;
                 document.getElementById('combo').innerText = '';
@@ -483,13 +519,23 @@
                 let pts = animalData[attachedItem].points;
                 if (doublePoints) pts *= 2;
                 pts = Math.floor(pts * comboMultiplier);
-                score += pts;
+                delta = pts;
+                score += delta;
                 savedAnimals[attachedItem] = (savedAnimals[attachedItem] || 0) + 1;
                   animalTotals[attachedItem] = (animalTotals[attachedItem] || 0) + 1;
                   localStorage.setItem("animalTotals", JSON.stringify(animalTotals));
                   updateAlbum();
                 animalsLeft = Math.max(animalsLeft - 1, 0);
                 registerCombo();
+                animalsRescuedThisRun++;
+                runGold += 1;
+            }
+
+            runScore += delta;
+
+            if (rocksHitThisRun >= 3) {
+                endRun();
+                return;
             }
 
             const scoreEl = document.getElementById("score");
@@ -684,6 +730,10 @@
 
         function nextLevel() {
             level++;
+            if (level > LEVEL_CAP) {
+                endRun();
+                return;
+            }
             setCookie("level", level, 7);
             setCookie("score", score, 7);
             startGame();
@@ -763,7 +813,37 @@
             if (btn) btn.innerText = "Pause";
         }
 
-        startGame();
+        function updatePlayerGoldDisplay() {
+            const el = document.getElementById("player-gold-display");
+            if (el) el.innerText = playerGold;
+        }
+
+        function startRun() {
+            level = 1;
+            startGame();
+        }
+
+        function endRun() {
+            clearInterval(balloonInterval);
+            clearInterval(cloudInterval);
+            playerGold += runGold;
+            localStorage.setItem("playerGold", playerGold);
+            updatePlayerGoldDisplay();
+            document.getElementById("run-summary-score").innerText = runScore;
+            document.getElementById("run-summary-animals").innerText = animalsRescuedThisRun;
+            document.getElementById("run-summary-gold").innerText = runGold;
+            document.getElementById("run-summary-modal").classList.remove("hidden");
+        }
+
+        function closeRunSummary() {
+            document.getElementById("run-summary-modal").classList.add("hidden");
+            level = 1;
+            setCookie("level", level, 7);
+            document.getElementById("main-menu").classList.remove("hidden");
+            updatePlayerGoldDisplay();
+        }
+
+        updatePlayerGoldDisplay();
     </script>
 
 </body>

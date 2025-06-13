@@ -140,6 +140,12 @@
         #shop-modal {
             z-index: 60;
         }
+        #stageBanner{position:absolute;top:4%;left:50%;transform:translateX(-50%);padding:.4rem 1rem;
+          font:700 1.1rem/1 sans-serif;background:#0009;color:#fff;border-radius:.5rem;opacity:0;
+          pointer-events:none;transition:opacity .4s}
+        #nextRail{position:absolute;top:10%;right:2%;display:flex;flex-direction:column;gap:.4rem;
+          font-size:1.4rem}
+        .showBanner{opacity:1}
     </style>
 </head>
 <body class="flex flex-col items-center">
@@ -153,6 +159,8 @@
     </div>
     <h3 class="mt-2">Animal Values: <span id="animal-values"></span></h3>
     <div id="combo" class="mt-2 text-red-600"></div>
+    <div id="stageBanner">Stage 1 / 20</div>
+    <div id="nextRail"></div>
 
     <div id="game-container"></div>
 
@@ -1227,6 +1235,77 @@
             else if(e.key==='C') AbilityManager.activate('chainLightning');
             else if(e.key==='F') AbilityManager.activate('fireBurst');
         });
+    </script>
+
+    <script type="module">
+    /* ---------- stub glue if your build is bare ------------ */
+    let level = window.level || 1, gold = window.runGold || 0,
+        stageMisses = 0, stageRocks = 0, balloonSpeed = 1;
+    const BALLOON_ICONS = ['🐶','🐱','🐰','🐥'];
+    const gameArea = document.getElementById('gameArea') || document.body;
+    const stageBanner = document.getElementById('stageBanner');
+    const nextRail    = document.getElementById('nextRail');
+
+    /* ---------- NEXT-QUEUE INITIALISATION ------------------ */
+    const NEXT_LEN = 3;
+    const nextQueue = Array.from({length:NEXT_LEN}, randBalloon);
+    renderNextRail();
+
+    function randBalloon(){
+      const idx = Math.floor(Math.random()*BALLOON_ICONS.length);
+      return BALLOON_ICONS[idx];
+    }
+
+    /* ---------- BALLOON SPAWN OVERRIDE --------------------- */
+    const OLD_spawnBalloon = window.spawnBalloon || function(icon){
+      if(window.spawnSingleBalloon) window.spawnSingleBalloon(icon);
+    };
+    window.spawnBalloon = function(){
+      const icon = nextQueue.shift();
+      nextQueue.push(randBalloon());
+      renderNextRail();
+      OLD_spawnBalloon(icon);
+    };
+
+    function renderNextRail(){
+      nextRail.innerHTML = nextQueue.map(i=>`<div>${i}</div>`).join('');
+    }
+
+    /* ---------- STAGE BANNER HANDLER ----------------------- */
+    function showStageBanner(){
+      stageBanner.textContent = `Stage ${level} / 20`;
+      stageBanner.classList.add('showBanner');
+      setTimeout(()=>stageBanner.classList.remove('showBanner'),2000);
+    }
+
+    /* ---------- PERFECT-SKY BONUS LOGIC -------------------- */
+    function endStage(){
+      if(stageMisses===0 && stageRocks===0){
+        gold += 50;
+        balloonSpeed *= 0.9;
+        flashBonus();
+      }
+      level++;
+      stageMisses = stageRocks = 0;
+      showStageBanner();
+    }
+    function flashBonus(){
+      stageBanner.textContent = 'Perfect Sky! +50 G';
+      stageBanner.classList.add('showBanner');
+      setTimeout(()=>stageBanner.classList.remove('showBanner'),1200);
+    }
+
+    /* ---------- HOOKS INTO EXISTING GAME ------------------- */
+    window.registerMiss   = ()=> stageMisses++;
+    window.registerRock   = ()=> stageRocks++;
+    // 1) Call endStage() from your real stage-complete trigger.
+    //    Example stub timer for demo purposes:
+    setInterval(()=>{ endStage(); }, 15000); // every 15 s -> next stage
+
+    document.addEventListener('keydown',e=>{
+      if(e.key==='n') window.spawnBalloon();
+      if(e.key==='l') endStage();
+    });
     </script>
 
 </body>

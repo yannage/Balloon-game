@@ -144,9 +144,17 @@
     <div id="saved-animals" class="mt-4">
         <h3 class="font-bold">Saved Animals:</h3>
         <p id="saved-list"></p>
+        <button id="album-btn" class="rounded px-2 py-1 bg-purple-600 text-white mt-2" onclick="openAlbum()">Animal Album</button>
     </div>
 
     <audio id="pop-sound" src="https://assets.mixkit.co/active_storage/sfx/2356/2356-preview.mp3"></audio>
+    <div id="animal-album-modal" class="hidden fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-30">
+        <div class="bg-white p-4 rounded w-72">
+            <h3 class="text-xl mb-2 font-bold">Animal Album</h3>
+            <div id="album-list" class="text-left"></div>
+            <button class="mt-4 px-4 py-2 bg-blue-600 text-white rounded" onclick="closeAlbum()">Close</button>
+        </div>
+    </div>
 
     <script>
         function setCookie(name, value, days) {
@@ -178,6 +186,8 @@
         let balloonAnimations = [];
         let cloudAnimations = [];
         let savedAnimals = {};
+          let animalTotals = JSON.parse(localStorage.getItem("animalTotals")) || {};
+          let animalDescriptions = {"🐌":"Slow but steady", "🐢":"Loves sunny days", "🐿️":"Collects acorns", "🦎":"Expert climber", "🐥":"Cheerful chirper"};
         let usedPositions = [];
         let isPaused = false;
         let remainingCountdown = null;
@@ -230,6 +240,7 @@
             document.getElementById("level").innerText = level;
             document.getElementById("animals-left").innerText = animalsLeft;
             updateSavedAnimalsDisplay();
+            updateAlbum();
             document.getElementById("next-level").style.display = "none";
             const overlay = document.getElementById("level-complete-overlay");
             overlay.style.display = "none";
@@ -451,6 +462,9 @@
                 pts = Math.floor(pts * comboMultiplier);
                 score += pts;
                 savedAnimals[attachedItem] = (savedAnimals[attachedItem] || 0) + 1;
+                  animalTotals[attachedItem] = (animalTotals[attachedItem] || 0) + 1;
+                  localStorage.setItem("animalTotals", JSON.stringify(animalTotals));
+                  updateAlbum();
                 animalsLeft = Math.max(animalsLeft - 1, 0);
                 registerCombo();
             }
@@ -517,6 +531,26 @@
             const el = document.getElementById("combo");
             el.innerText = msg + ` x${comboMultiplier.toFixed(1)}`;
         }
+
+        function updateAlbum() {
+            const albumList = document.getElementById("album-list");
+            if (!albumList) return;
+            albumList.innerHTML = "";
+            for (let animal in animalTotals) {
+                albumList.innerHTML += "<div>" + animal + " x" + animalTotals[animal] + " - " + (animalDescriptions[animal] || "") + "</div>";
+            }
+            if (albumList.innerHTML === "") albumList.innerHTML = "No animals saved yet.";
+        }
+
+        function openAlbum() {
+            updateAlbum();
+            document.getElementById("animal-album-modal").classList.remove("hidden");
+        }
+
+        function closeAlbum() {
+            document.getElementById("animal-album-modal").classList.add("hidden");
+        }
+
 
        function endLevel() {
             clearInterval(balloonInterval);

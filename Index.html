@@ -146,6 +146,13 @@
         <p id="saved-list"></p>
     </div>
 
+    <div id="achievements" class="mt-4">
+        <h3 class="font-bold">Achievements:</h3>
+        <p id="achievements-list"></p>
+        <h4 class="font-bold mt-2">Today's Challenge:</h4>
+        <p id="daily-challenge"></p>
+    </div>
+
     <audio id="pop-sound" src="https://assets.mixkit.co/active_storage/sfx/2356/2356-preview.mp3"></audio>
 
     <script>
@@ -186,6 +193,27 @@
         let comboCount = 0;
         let comboTimer;
         let comboMultiplier = 1;
+
+        let popCount = parseInt(localStorage.getItem("popCount")) || 0;
+        let achievements = JSON.parse(localStorage.getItem("achievements")) || {
+            firstPop: false,
+            pop50: false,
+            level5: false,
+            combo3: false
+        };
+        let dailyChallenge = JSON.parse(localStorage.getItem("dailyChallenge")) || null;
+        const today = new Date().toDateString();
+        if (!dailyChallenge || dailyChallenge.date !== today) {
+            dailyChallenge = {
+                date: today,
+                description: "Save 5 🐢 today",
+                animal: "🐢",
+                goal: 5,
+                progress: 0,
+                done: false
+            };
+            localStorage.setItem("dailyChallenge", JSON.stringify(dailyChallenge));
+        }
 
         let animalData = {
             "🐌": { speed: 2.7, points: 20 },
@@ -230,6 +258,8 @@
             document.getElementById("level").innerText = level;
             document.getElementById("animals-left").innerText = animalsLeft;
             updateSavedAnimalsDisplay();
+            updateAchievementsDisplay();
+            checkAchievements();
             document.getElementById("next-level").style.display = "none";
             const overlay = document.getElementById("level-complete-overlay");
             overlay.style.display = "none";
@@ -429,6 +459,14 @@
                 if (pop) { pop.currentTime = 0; pop.play(); }
             }, 120);
 
+            popCount++;
+            if (attachedItem === dailyChallenge.animal && !dailyChallenge.done) {
+                dailyChallenge.progress++;
+                if (dailyChallenge.progress >= dailyChallenge.goal) {
+                    dailyChallenge.done = true;
+                }
+            }
+
             if (attachedItem === "🪨") {
                 if (shield) {
                     shield = false;
@@ -461,6 +499,7 @@
             animalsLeftEl.innerText = animalsLeft;
             anime({ targets: [scoreEl, animalsLeftEl], scale: [1.3, 1], duration: 300, easing: 'easeOutElastic(1, .8)' });
             updateSavedAnimalsDisplay();
+            checkAchievements();
 
                         const h = document.getElementById("game-container").clientHeight;
             balloonGroup.style.transform = "none";
@@ -484,6 +523,34 @@
             if (savedList.innerHTML === "") {
                 savedList.innerHTML = "None yet";
             }
+            updateAchievementsDisplay();
+        }
+
+        function updateAchievementsDisplay() {
+            const achList = document.getElementById("achievements-list");
+            if (achList) {
+                let completed = Object.keys(achievements).filter(k => achievements[k]);
+                achList.innerHTML = completed.length ? completed.join(", ") : "None yet";
+            }
+            const dcEl = document.getElementById("daily-challenge");
+            if (dcEl) {
+                dcEl.innerText = `${dailyChallenge.description} (${dailyChallenge.progress}/${dailyChallenge.goal})` + (dailyChallenge.done ? " ✅" : "");
+            }
+        }
+
+        function saveProgress() {
+            localStorage.setItem("achievements", JSON.stringify(achievements));
+            localStorage.setItem("popCount", popCount);
+            localStorage.setItem("dailyChallenge", JSON.stringify(dailyChallenge));
+        }
+
+        function checkAchievements() {
+            if (!achievements.firstPop && popCount >= 1) achievements.firstPop = true;
+            if (!achievements.pop50 && popCount >= 50) achievements.pop50 = true;
+            if (!achievements.level5 && level >= 5) achievements.level5 = true;
+            if (!achievements.combo3 && comboMultiplier >= 2) achievements.combo3 = true;
+            saveProgress();
+            updateAchievementsDisplay();
         }
 
         function applyPowerUp(type) {
@@ -509,6 +576,7 @@
                 comboMultiplier = 1;
                 document.getElementById("combo").innerText = "";
             }, 1000);
+            if (comboMultiplier >= 2) checkAchievements();
         }
 
         function showComboMessage() {
@@ -558,12 +626,13 @@
             }, 1000);
         }
 
-        function nextLevel() {
-            level++;
-            setCookie("level", level, 7);
-            setCookie("score", score, 7);
+       function nextLevel() {
+           level++;
+           setCookie("level", level, 7);
+           setCookie("score", score, 7);
+            checkAchievements();
             startGame();
-        }
+       }
 
         function togglePause() {
             if (isPaused) {

@@ -140,6 +140,11 @@
         #shop-modal {
             z-index: 60;
         }
+
+        .flash-lightning{animation:flashBlue 0.3s alternate infinite}
+        .flash-fire     {animation:flashRed  0.3s alternate infinite}
+        @keyframes flashBlue{from{background:#bbf2} to{background:transparent}}
+        @keyframes flashRed {from{background:#fbb2} to{background:transparent}}
     </style>
 </head>
 <body class="flex flex-col items-center">
@@ -153,6 +158,8 @@
     </div>
     <h3 class="mt-2">Animal Values: <span id="animal-values"></span></h3>
     <div id="combo" class="mt-2 text-red-600"></div>
+    <div id="goldHUD">0 G</div>
+    <div id="logHUD"></div>
 
     <div id="game-container"></div>
 
@@ -1227,6 +1234,110 @@
             else if(e.key==='C') AbilityManager.activate('chainLightning');
             else if(e.key==='F') AbilityManager.activate('fireBurst');
         });
+    </script>
+
+    <script type="module">
+    const game=document.getElementById('game-container');
+    let level=window.level||1;
+    let gold=0;
+    const BalloonType={NORMAL:'NORMAL',MONEY:'MONEY',GIFT:'GIFT',ROCK:'ROCK'};
+    const balloons=[];
+    function updateGold(){document.getElementById('goldHUD').innerText=`${gold} G`;}
+    function log(m){const el=document.getElementById('logHUD');el.textContent=m;setTimeout(()=>el.textContent='',1000);}
+    window.handleRockHit=window.handleRockHit||(()=>log('🪨 hit!'));
+    function sfx(){log('🎶');}
+
+    function createBalloon(type){
+        const el=document.createElement('div');
+        el.dataset.type=type;el.dataset.animal='1';
+        el.textContent={NORMAL:'🎈',MONEY:'💰',GIFT:'🎁',ROCK:'🪨'}[type];
+        el.style.position='absolute';
+        el.style.left=Math.random()*300+'px';
+        el.style.bottom='0px';
+        el.style.fontSize='30px';
+        game.appendChild(el);
+        const obj={el,type,x:parseFloat(el.style.left),y:0,speed:40+Math.random()*20,popped:false};
+        balloons.push(obj);
+        el.addEventListener('click',()=>popBalloon(obj));
+        return el;
+    }
+
+    function spawnBalloon(){
+        const giftChance=Math.min(0.10+0.01*(level-1),0.20);
+        const moneyChance=0.10;
+        const r=Math.random();
+        let type=r<giftChance?'GIFT':r<giftChance+moneyChance?'MONEY':'NORMAL';
+        createBalloon(type);
+    }
+
+    function spawnMoney(){createBalloon('MONEY');}
+    function spawnGift(){createBalloon('GIFT');}
+
+    function handleGift(el){
+        const roll=Math.random();
+        if(roll<0.20){el.dataset.type='ROCK';handleRockHit();return;}
+        if(roll<0.84){gold+=10*level;updateGold();sfx('jackpot');return;}
+        AbilityManager.activate(Math.random()<0.5?'chain':'fire');
+    }
+
+    function popBalloon(obj,fromFire=false){
+        if(obj.popped)return;obj.popped=true;
+        obj.el.style.transition='transform .2s';
+        obj.el.style.transform='scale(0)';
+        setTimeout(()=>obj.el.remove(),200);
+        switch(obj.type){
+            case 'MONEY': gold+=5+level; updateGold(); break;
+            case 'GIFT': handleGift(obj.el); break;
+            case 'ROCK': handleRockHit(); break;
+        }
+        if(AbilityManager.active==='fire'&&!fromFire){
+            const rect=obj.el.getBoundingClientRect();
+            const r=rect.width*2;
+            balloons.forEach(b=>{
+                if(!b.popped){
+                    const br=b.el.getBoundingClientRect();
+                    if(Math.hypot(br.left-rect.left,br.top-rect.top)<r) popBalloon(b,true);
+                }
+            });
+        }
+    }
+
+    const AbilityManager={
+        active:null,t:0,
+        activate(id){if(this.active) this.end();this.active=id;this.t=10000;document.body.classList.toggle('flash-lightning',id==='chain');document.body.classList.toggle('flash-fire',id==='fire');log(id+'!');},
+        end(){document.body.classList.remove('flash-lightning','flash-fire');this.active=null;},
+        tick(dt){if(!this.active)return;this.t-=dt;if(this.t<=0)this.end();}
+    };
+
+    let last=performance.now();
+    function loop(t){
+        const dt=t-last;last=t;
+        balloons.forEach(b=>{
+            if(b.popped)return;
+            b.y+=b.speed*dt/1000;
+            b.el.style.bottom=b.y+'px';
+            if(AbilityManager.active==='chain'&&!b.chain&&b.y>game.clientHeight/2){b.chain=true;popBalloon(b);}
+            if(b.y>game.clientHeight){b.popped=true;b.el.remove();}
+        });
+        AbilityManager.tick(dt);
+        requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+    setInterval(spawnBalloon,1500);
+    updateGold();
+
+    window.spawnBalloon=spawnBalloon;
+    window.popBalloon=o=>{};
+    window.spawnMoney=spawnMoney;
+    window.spawnGift=spawnGift;
+    window.AbilityMgr=AbilityManager;
+
+    window.addEventListener('keydown',e=>{
+        if(e.key==='M')spawnMoney();
+        else if(e.key==='G')spawnGift();
+        else if(e.key==='C')AbilityManager.activate('chain');
+        else if(e.key==='F')AbilityManager.activate('fire');
+    });
     </script>
 
 </body>

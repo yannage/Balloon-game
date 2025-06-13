@@ -153,6 +153,7 @@
     </div>
     <h3 class="mt-2">Animal Values: <span id="animal-values"></span></h3>
     <div id="combo" class="mt-2 text-red-600"></div>
+    <div id="upcoming-container" class="mt-2">Next Balloons: <span id="upcoming-list"></span></div>
 
     <div id="game-container"></div>
 
@@ -279,6 +280,7 @@
         let comboTimer;
         let comboMultiplier = 1;
         let selectedBalloonGroup = null;
+        let upcomingQueue = [];
 
         const BALLOON_DIAMETER = 30;
 
@@ -371,6 +373,32 @@
             anime({targets:balloonGroup,opacity:[0,1],duration:800,easing:'linear'});
             const anim=anime({targets:balloonGroup,translateY:-h,duration:4000,easing:'easeInOutSine',complete:()=>{balloonGroup.remove();}});
             balloonGroup._anim=anim; balloonAnimations.push(anim);
+        }
+
+        function randomAttachedItem(){
+            let rand=Math.random();
+            const giftChance=Math.min(0.10+0.01*(level-1),0.20);
+            const moneyChance=0.10;
+            const rockChance=Math.min(0.1+level*0.02,0.5);
+            const powerUpChance=0.05;
+            const hazardChance=0.05;
+            if(rand<giftChance) return '🎁';
+            else if(rand<giftChance+moneyChance) return '💰';
+            else if(rand<giftChance+moneyChance+powerUpChance) return powerUps[Math.floor(Math.random()*powerUps.length)];
+            else if(rand<giftChance+moneyChance+powerUpChance+hazardChance) return hazards[Math.floor(Math.random()*hazards.length)];
+            else if(Math.random()<rockChance) return '🪨';
+            return getRandomAnimal();
+        }
+
+        function initUpcomingQueue(){
+            upcomingQueue=[];
+            for(let i=0;i<3;i++) upcomingQueue.push(randomAttachedItem());
+            updateUpcomingDisplay();
+        }
+
+        function updateUpcomingDisplay(){
+            const el=document.getElementById('upcoming-list');
+            if(el) el.innerText=upcomingQueue.join(' ');
         }
 
         const LEVEL_CAP = 5;
@@ -475,6 +503,7 @@
             overlay.classList.remove("show", "fade-out");
 
             updateAnimalValues();
+            initUpcomingQueue();
             spawnClouds();
             spawnBalloons();
         }
@@ -559,26 +588,10 @@
 
                     let attached = document.createElement("div");
                     attached.classList.add("attached");
-                    let rand = Math.random();
-                    let selectedAnimal;
-                    const giftChance = Math.min(0.10 + 0.01 * (level - 1), 0.20);
-                    const moneyChance = 0.10;
-                    const rockChance = Math.min(0.1 + level * 0.02, 0.5);
-                    const powerUpChance = 0.05;
-                    const hazardChance = 0.05;
-                    if (rand < giftChance) {
-                        selectedAnimal = "🎁";
-                    } else if (rand < giftChance + moneyChance) {
-                        selectedAnimal = "💰";
-                    } else if (rand < giftChance + moneyChance + powerUpChance) {
-                        selectedAnimal = powerUps[Math.floor(Math.random() * powerUps.length)];
-                    } else if (rand < giftChance + moneyChance + powerUpChance + hazardChance) {
-                        selectedAnimal = hazards[Math.floor(Math.random() * hazards.length)];
-                    } else if (Math.random() < rockChance) {
-                        selectedAnimal = "🪨";
-                    } else {
-                        selectedAnimal = getRandomAnimal();
-                    }
+                    let selectedAnimal = upcomingQueue.shift();
+                    if (!selectedAnimal) selectedAnimal = randomAttachedItem();
+                    upcomingQueue.push(randomAttachedItem());
+                    updateUpcomingDisplay();
                     attached.innerHTML = selectedAnimal;
                     balloonGroup.dataset.attached = selectedAnimal;
 
@@ -593,7 +606,7 @@
                     swayWrapper.appendChild(attached);
                     balloonGroup.appendChild(swayWrapper);
 
-                    let balloonSpeed = animalData[selectedAnimal].speed / (1 + (level - 1) * 0.05);
+                    let balloonSpeed = (animalData[selectedAnimal]?.speed || 3.5) / (1 + (level - 1) * 0.05);
 
                     let leftPosition;
                     do {

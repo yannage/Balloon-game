@@ -144,6 +144,7 @@
         <div>Level: <span id="level">1</span></div>
         <div>Score: <span id="score">0</span></div>
         <div>Animals Left: <span id="animals-left">10</span></div>
+        <div>Missed: <span id="animals-missed">0</span></div>
     </div>
     <h3 class="mt-2">Animal Values: <span id="animal-values"></span></h3>
     <div id="combo" class="mt-2 text-red-600"></div>
@@ -192,6 +193,15 @@
             <p>Gold Earned: <span id="run-summary-gold"></span></p>
             <button class="mt-4 px-4 py-2 bg-blue-600 text-white rounded" onclick="closeRunSummary()">Close</button>
         </div>
+    </div>
+
+    <div id="rock-overlay" class="hidden fixed inset-0 bg-red-700 bg-opacity-75 flex items-center justify-center text-white text-2xl z-50">
+        <div>Can't pop balloons!</div>
+    </div>
+
+    <div id="game-over-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center text-white z-50">
+        <h2 class="text-3xl mb-4">Game Over</h2>
+        <button class="px-4 py-2 bg-blue-600 rounded" onclick="restartGame()">Restart</button>
     </div>
 
     <div id="shop-modal" class="hidden fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-40">
@@ -257,6 +267,9 @@
         let runGold = 0;
         let animalsRescuedThisRun = 0;
         let rocksHitThisRun = 0;
+        let animalsMissed = 0;
+        const MAX_MISSED = 5;
+        let canPop = true;
         let playerGold = parseInt(localStorage.getItem("playerGold")) || 0;
         const hatEmojis = { cap: "🧢", crown: "👑", wizard: "🎩" };
         let hats = [
@@ -303,12 +316,17 @@
                 runGold = 0;
                 animalsRescuedThisRun = 0;
                 rocksHitThisRun = 0;
+                animalsMissed = 0;
+                const missEl = document.getElementById("animals-missed");
+                if (missEl) missEl.innerText = animalsMissed;
             }
             clearInterval(balloonInterval);
             clearInterval(cloudInterval);
             clearInterval(countdownInterval);
             document.getElementById("main-menu").classList.add("hidden");
             document.getElementById("run-summary-modal").classList.add("hidden");
+            document.getElementById("game-container").style.pointerEvents = 'auto';
+            canPop = true;
             balloonAnimations.forEach(anim => anim.pause());
             balloonAnimations = [];
             cloudAnimations.forEach(anim => anim.pause());
@@ -329,6 +347,8 @@
             savedAnimals = {};
             selectedBalloonGroup = null;
             usedPositions = [];
+            document.getElementById("rock-overlay").classList.add("hidden");
+            document.getElementById("game-over-modal").classList.add("hidden");
             setCookie("level", level, 7);
             setCookie("score", score, 7);
             document.getElementById("score").innerText = score;
@@ -506,6 +526,7 @@
                                     easing: 'linear',
                                     complete: () => {
                                         balloonGroup.remove();
+                                        handleBalloonMiss(selectedAnimal);
                                         const idx = balloonAnimations.indexOf(anim);
                                         if (idx !== -1) balloonAnimations.splice(idx, 1);
                                         const idx2 = balloonAnimations.indexOf(swayAnim);
@@ -524,7 +545,7 @@
         }
 
         function popBalloon(balloonGroup, attachedItem) {
-            if (isPaused) return;
+            if (isPaused || !canPop) return;
             let balloon = balloonGroup.querySelector(".balloon");
             // Disable further clicks once popped
             balloonGroup.onclick = null;
@@ -550,6 +571,7 @@
                     delta = -10;
                     score += delta;
                     rocksHitThisRun++;
+                    handleRockPenalty();
                 }
                 comboCount = 0;
                 comboMultiplier = 1;
@@ -670,14 +692,55 @@
             if (albumList.innerHTML === "") albumList.innerHTML = "No animals saved yet.";
         }
 
-        function openAlbum() {
-            updateAlbum();
-            document.getElementById("animal-album-modal").classList.remove("hidden");
-        }
+       function openAlbum() {
+           updateAlbum();
+           document.getElementById("animal-album-modal").classList.remove("hidden");
+       }
 
        function closeAlbum() {
            document.getElementById("animal-album-modal").classList.add("hidden");
        }
+
+        function handleRockPenalty() {
+            canPop = false;
+            const overlay = document.getElementById("rock-overlay");
+            overlay.classList.remove("hidden");
+            document.getElementById("game-container").style.pointerEvents = 'none';
+            setTimeout(() => {
+                overlay.classList.add("hidden");
+                document.getElementById("game-container").style.pointerEvents = 'auto';
+                canPop = true;
+            }, 2000);
+        }
+
+        function handleBalloonMiss(item) {
+            if (animalData[item] && item !== '🪨') {
+                animalsMissed++;
+                const missEl = document.getElementById("animals-missed");
+                if (missEl) {
+                    missEl.innerText = animalsMissed;
+                    anime({ targets: missEl, scale: [1.3, 1], duration: 300, easing: 'easeOutElastic(1, .8)' });
+                }
+                if (animalsMissed >= MAX_MISSED) {
+                    gameOver();
+                }
+            }
+        }
+
+        function gameOver() {
+            clearInterval(balloonInterval);
+            clearInterval(cloudInterval);
+            balloonAnimations.forEach(a => a.pause());
+            cloudAnimations.forEach(a => a.pause());
+            document.getElementById("game-over-modal").classList.remove("hidden");
+        }
+
+        function restartGame() {
+            document.getElementById("game-over-modal").classList.add("hidden");
+            score = 0;
+            level = 1;
+            startGame();
+        }
 
         function selectBalloon(bg) {
             if (selectedBalloonGroup) {
@@ -703,6 +766,7 @@
         }
 
         function handleA() {
+            if (!canPop) return;
             if (!selectedBalloonGroup) {
                 selectRandomBalloon();
             } else {

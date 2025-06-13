@@ -169,6 +169,7 @@
 
     <button id="next-level" class="rounded px-4 py-2 bg-green-600 text-white mt-4" onclick="nextLevel()">Next Level</button>
     <button id="pause-btn" class="rounded px-4 py-2 bg-blue-600 text-white mt-4 ml-2" onclick="togglePause()">Pause</button>
+    <button id="end-run-btn" class="hidden rounded px-4 py-2 bg-red-600 text-white mt-4 ml-2" onclick="endRunEarly()">End Run</button>
 
     <div id="saved-animals" class="mt-4">
         <h3 class="font-bold">Saved Animals:</h3>
@@ -191,7 +192,10 @@
             <p>Score: <span id="run-summary-score"></span></p>
             <p>Animals Rescued: <span id="run-summary-animals"></span></p>
             <p>Gold Earned: <span id="run-summary-gold"></span></p>
-            <button class="mt-4 px-4 py-2 bg-blue-600 text-white rounded" onclick="closeRunSummary()">Close</button>
+            <div class="mt-4 flex justify-center gap-2">
+                <button class="px-4 py-2 bg-blue-600 text-white rounded" onclick="closeRunSummary()">Close</button>
+                <button class="px-4 py-2 bg-yellow-600 text-white rounded" onclick="openShop()">Shop</button>
+            </div>
         </div>
     </div>
 
@@ -200,8 +204,12 @@
     </div>
 
     <div id="game-over-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center text-white z-50">
-        <h2 class="text-3xl mb-4">Game Over</h2>
-        <button class="px-4 py-2 bg-blue-600 rounded" onclick="restartGame()">Restart</button>
+        <h2 class="text-3xl mb-2">Game Over</h2>
+        <div class="mb-2">Gold Earned: <span id="game-over-gold">0</span></div>
+        <div class="flex gap-2">
+            <button class="px-4 py-2 bg-blue-600 rounded" onclick="restartGame()">Restart</button>
+            <button class="px-4 py-2 bg-yellow-600 rounded" onclick="openShopFromGameOver()">Shop</button>
+        </div>
     </div>
 
     <div id="shop-modal" class="hidden fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-40">
@@ -349,6 +357,8 @@
             usedPositions = [];
             document.getElementById("rock-overlay").classList.add("hidden");
             document.getElementById("game-over-modal").classList.add("hidden");
+            const endBtn = document.getElementById("end-run-btn");
+            if (endBtn) endBtn.classList.remove("hidden");
             setCookie("level", level, 7);
             setCookie("score", score, 7);
             document.getElementById("score").innerText = score;
@@ -628,7 +638,7 @@
             runScore += delta;
 
             if (rocksHitThisRun >= 3) {
-                endRun();
+                endRun(0.75);
                 return;
             }
 
@@ -751,20 +761,29 @@
             }
         }
 
-        function gameOver() {
-            clearInterval(balloonInterval);
-            clearInterval(cloudInterval);
-            balloonAnimations.forEach(a => a.pause());
-            cloudAnimations.forEach(a => a.pause());
+       function gameOver() {
+           clearInterval(balloonInterval);
+           clearInterval(cloudInterval);
+           balloonAnimations.forEach(a => a.pause());
+           cloudAnimations.forEach(a => a.pause());
+            const endBtn = document.getElementById("end-run-btn");
+            if (endBtn) endBtn.classList.add("hidden");
+            const earned = Math.floor(runGold * 0.5);
+            playerGold += earned;
+            localStorage.setItem("playerGold", playerGold);
+            updatePlayerGoldDisplay();
+            document.getElementById("game-over-gold").innerText = earned;
             document.getElementById("game-over-modal").classList.remove("hidden");
         }
 
-        function restartGame() {
-            document.getElementById("game-over-modal").classList.add("hidden");
-            score = 0;
-            level = 1;
-            startGame();
-        }
+       function restartGame() {
+           document.getElementById("game-over-modal").classList.add("hidden");
+            const endBtn = document.getElementById("end-run-btn");
+            if (endBtn) endBtn.classList.add("hidden");
+           score = 0;
+           level = 1;
+           startGame();
+       }
 
         function selectBalloon(bg) {
             if (selectedBalloonGroup) {
@@ -965,16 +984,22 @@
             startGame();
         }
 
-        function endRun() {
+        function endRun(mult = 1) {
             clearInterval(balloonInterval);
             clearInterval(cloudInterval);
-            playerGold += runGold;
+            document.getElementById("end-run-btn").classList.add("hidden");
+            const earned = Math.floor(runGold * mult);
+            playerGold += earned;
             localStorage.setItem("playerGold", playerGold);
             updatePlayerGoldDisplay();
             document.getElementById("run-summary-score").innerText = runScore;
             document.getElementById("run-summary-animals").innerText = animalsRescuedThisRun;
-            document.getElementById("run-summary-gold").innerText = runGold;
+            document.getElementById("run-summary-gold").innerText = earned;
             document.getElementById("run-summary-modal").classList.remove("hidden");
+        }
+
+        function endRunEarly() {
+            endRun(0.75);
         }
 
         function closeRunSummary() {
@@ -986,13 +1011,27 @@
             updateHatDropdown();
         }
 
+        let reopenModal = null;
+
         function openShop() {
             updateShop();
+            reopenModal = null;
+            document.getElementById("shop-modal").classList.remove("hidden");
+        }
+
+        function openShopFromGameOver() {
+            updateShop();
+            reopenModal = "game-over-modal";
+            document.getElementById("game-over-modal").classList.add("hidden");
             document.getElementById("shop-modal").classList.remove("hidden");
         }
 
         function closeShop() {
             document.getElementById("shop-modal").classList.add("hidden");
+            if (reopenModal) {
+                document.getElementById(reopenModal).classList.remove("hidden");
+                reopenModal = null;
+            }
         }
 
         function updateShop() {

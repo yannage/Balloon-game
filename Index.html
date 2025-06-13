@@ -87,6 +87,10 @@
             margin-top: 10px;
             font-size: 20px;
         }
+        #upcoming {
+            margin-top: 10px;
+            font-size: 20px;
+        }
         #next-level {
             display: none;
             margin-top: 20px;
@@ -153,6 +157,7 @@
     </div>
     <h3 class="mt-2">Animal Values: <span id="animal-values"></span></h3>
     <div id="combo" class="mt-2 text-red-600"></div>
+    <div id="upcoming" class="mt-2">Next: <span id="upcoming-balloons"></span></div>
 
     <div id="game-container"></div>
 
@@ -279,6 +284,7 @@
         let comboTimer;
         let comboMultiplier = 1;
         let selectedBalloonGroup = null;
+        let upcoming = [];
 
         const BALLOON_DIAMETER = 30;
 
@@ -421,6 +427,43 @@
             return available[0];
         }
 
+        function generateNextBalloonItem() {
+            let rand = Math.random();
+            const giftChance = Math.min(0.10 + 0.01 * (level - 1), 0.20);
+            const moneyChance = 0.10;
+            const rockChance = Math.min(0.1 + level * 0.02, 0.5);
+            const powerUpChance = 0.05;
+            const hazardChance = 0.05;
+            if (rand < giftChance) {
+                return "🎁";
+            } else if (rand < giftChance + moneyChance) {
+                return "💰";
+            } else if (rand < giftChance + moneyChance + powerUpChance) {
+                return powerUps[Math.floor(Math.random() * powerUps.length)];
+            } else if (rand < giftChance + moneyChance + powerUpChance + hazardChance) {
+                return hazards[Math.floor(Math.random() * hazards.length)];
+            } else if (Math.random() < rockChance) {
+                return "🪨";
+            } else {
+                return getRandomAnimal();
+            }
+        }
+
+        function updateUpcomingDisplay() {
+            const el = document.getElementById("upcoming-balloons");
+            if (el) el.innerText = upcoming.join(" ");
+        }
+
+        function getNextBalloonItem() {
+            if (upcoming.length === 0) {
+                upcoming.push(generateNextBalloonItem());
+            }
+            const item = upcoming.shift();
+            upcoming.push(generateNextBalloonItem());
+            updateUpcomingDisplay();
+            return item;
+        }
+
         function startGame() {
             if (level === 1) {
                 runScore = 0;
@@ -458,6 +501,9 @@
             savedAnimals = {};
             selectedBalloonGroup = null;
             usedPositions = [];
+            upcoming = [];
+            for (let i = 0; i < 3; i++) upcoming.push(generateNextBalloonItem());
+            updateUpcomingDisplay();
             document.getElementById("rock-overlay").classList.add("hidden");
             document.getElementById("game-over-modal").classList.add("hidden");
             const endBtn = document.getElementById("end-run-btn");
@@ -559,26 +605,7 @@
 
                     let attached = document.createElement("div");
                     attached.classList.add("attached");
-                    let rand = Math.random();
-                    let selectedAnimal;
-                    const giftChance = Math.min(0.10 + 0.01 * (level - 1), 0.20);
-                    const moneyChance = 0.10;
-                    const rockChance = Math.min(0.1 + level * 0.02, 0.5);
-                    const powerUpChance = 0.05;
-                    const hazardChance = 0.05;
-                    if (rand < giftChance) {
-                        selectedAnimal = "🎁";
-                    } else if (rand < giftChance + moneyChance) {
-                        selectedAnimal = "💰";
-                    } else if (rand < giftChance + moneyChance + powerUpChance) {
-                        selectedAnimal = powerUps[Math.floor(Math.random() * powerUps.length)];
-                    } else if (rand < giftChance + moneyChance + powerUpChance + hazardChance) {
-                        selectedAnimal = hazards[Math.floor(Math.random() * hazards.length)];
-                    } else if (Math.random() < rockChance) {
-                        selectedAnimal = "🪨";
-                    } else {
-                        selectedAnimal = getRandomAnimal();
-                    }
+                    let selectedAnimal = getNextBalloonItem();
                     attached.innerHTML = selectedAnimal;
                     balloonGroup.dataset.attached = selectedAnimal;
 

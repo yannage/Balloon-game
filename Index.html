@@ -519,6 +519,7 @@
                             easing: 'easeInOutSine',
                             complete: () => {
                                 swayAnim.pause();
+                                if (balloonGroup.popped) return;
                                 const fadeAnim = anime({
                                     targets: balloonGroup,
                                     opacity: 0,
@@ -538,6 +539,8 @@
                                 balloonAnimations.push(fadeAnim);
                             }
                         });
+                        balloonGroup._anim = anim;
+                        balloonGroup._sway = swayAnim;
                         balloonAnimations.push(anim, swayAnim);
                     }, 100);
                 }
@@ -546,6 +549,11 @@
 
         function popBalloon(balloonGroup, attachedItem) {
             if (isPaused || !canPop) return;
+            balloonGroup.popped = true;
+            if (balloonGroup._anim) balloonGroup._anim.pause();
+            if (balloonGroup._sway) balloonGroup._sway.pause();
+            anime.remove(balloonGroup);
+            anime.remove(balloonGroup.querySelector('.sway-wrapper'));
             let balloon = balloonGroup.querySelector(".balloon");
             // Disable further clicks once popped
             balloonGroup.onclick = null;

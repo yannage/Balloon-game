@@ -182,7 +182,12 @@
         <button id="album-btn" class="rounded px-2 py-1 bg-purple-600 text-white mt-2" onclick="openAlbum()">Animal Album</button>
     </div>
 
-    <audio id="pop-sound" src="https://assets.mixkit.co/active_storage/sfx/2356/2356-preview.mp3"></audio>
+<audio id="pop-sound" src="https://assets.mixkit.co/active_storage/sfx/2356/2356-preview.mp3"></audio>
+        <audio id="coin-sound" src="https://assets.mixkit.co/active_storage/sfx/1823/1823-preview.mp3"></audio>
+        <audio id="jackpot-sound" src="https://assets.mixkit.co/active_storage/sfx/595/595-preview.mp3"></audio>
+        <audio id="lightning-start-sound" src="https://assets.mixkit.co/active_storage/sfx/2094/2094-preview.mp3"></audio>
+        <audio id="fire-start-sound" src="https://assets.mixkit.co/active_storage/sfx/502/502-preview.mp3"></audio>
+        <audio id="ability-end-sound" src="https://assets.mixkit.co/active_storage/sfx/2876/2876-preview.mp3"></audio>
     <div id="animal-album-modal" class="hidden fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-30">
         <div class="bg-white p-4 rounded w-72">
             <h3 class="text-xl mb-2 font-bold">Animal Album</h3>
@@ -274,6 +279,99 @@
         let comboTimer;
         let comboMultiplier = 1;
         let selectedBalloonGroup = null;
+
+        const BALLOON_DIAMETER = 30;
+
+        const FX = {
+            flashScreen(color) {
+                const el = document.createElement('div');
+                el.id = 'fx-flash';
+                Object.assign(el.style, {position:'fixed', inset:0, background:color, opacity:'0.5', pointerEvents:'none'});
+                document.body.appendChild(el);
+            },
+            clearFlash() { const el=document.getElementById('fx-flash'); if(el) el.remove(); },
+            tintScreen(color) {
+                let el=document.getElementById('fx-tint');
+                if(!el){ el=document.createElement('div'); el.id='fx-tint'; Object.assign(el.style,{position:'fixed',inset:0,background:color,opacity:'0.4',pointerEvents:'none'}); document.body.appendChild(el);}else{el.style.background=color;}
+            },
+            clearTint() { const el=document.getElementById('fx-tint'); if(el) el.remove(); },
+            coinShower(target) {
+                const rect=target.getBoundingClientRect();
+                for(let i=0;i<5;i++){
+                    const c=document.createElement('div');
+                    c.textContent='💰';
+                    Object.assign(c.style,{position:'fixed',left:(rect.left+Math.random()*rect.width)+'px',top:rect.top+'px',pointerEvents:'none',transition:'transform 0.6s, opacity 0.6s'});
+                    document.body.appendChild(c);
+                    setTimeout(()=>{c.style.transform='translateY(-40px)';c.style.opacity='0';},10);
+                    setTimeout(()=>c.remove(),700);
+                }
+            }
+        };
+
+        function playSound(id){ const a=document.getElementById(id); if(a){ a.currentTime=0; a.play(); } }
+
+        const AbilityManager = (() => {
+            let active=null; let expires=0; let interval=null;
+            function tick(){ if(!active) return; if(Date.now()>expires){ end(); } else { active.onUpdate(100); } }
+            function activate(id){ if(active) active.onEnd(); active=id==='chainLightning'?makeChainLightning():makeFireBurst(); expires=Date.now()+active.durationMs; active.onStart(); if(!interval) interval=setInterval(tick,100); }
+            function end(){ if(active){ active.onEnd(); active=null; } }
+            return { activate, end, get active(){return active;} };
+        })();
+
+        function makeChainLightning(){
+            return { id:'chainLightning', durationMs:10000,
+                onStart(){ FX.flashScreen('#bbf'); playSound('lightning-start-sound'); },
+                onUpdate(){ const cont=document.getElementById('game-container'); if(!cont) return; const rect=cont.getBoundingClientRect(); const mid=rect.top+rect.height/2; document.querySelectorAll('.balloon-group').forEach(bg=>{ if(bg.popped) return; const r=bg.getBoundingClientRect(); if(!bg.dataset.cl && r.top<=mid){ bg.dataset.cl='1'; const item=bg.dataset.attached; if(animalData[item]&&item!=='🪨') popBalloon(bg,item); } }); },
+                onEnd(){ FX.clearFlash(); playSound('ability-end-sound'); }
+            };
+        }
+
+        function makeFireBurst(){
+            return { id:'fireBurst', durationMs:10000,
+                onStart(){ FX.tintScreen('#f55'); playSound('fire-start-sound'); },
+                onUpdate(){},
+                onEnd(){ FX.clearTint(); playSound('ability-end-sound'); }
+            };
+        }
+
+        function explode(origin, visited=new Set()) {
+            visited.add(origin);
+            const r1=origin.getBoundingClientRect();
+            document.querySelectorAll('.balloon-group').forEach(bg=>{
+                if(visited.has(bg) || bg.popped) return;
+                const r2=bg.getBoundingClientRect();
+                const dist=Math.hypot(r1.left-r2.left,r1.top-r2.top);
+                if(dist<=BALLOON_DIAMETER*2){
+                    popBalloon(bg,bg.dataset.attached,true);
+                    explode(bg,visited);
+                }
+            });
+        }
+
+        function spawnSingleBalloon(item){
+            let balloonGroup=document.createElement('div');
+            balloonGroup.classList.add('balloon-group');
+            let swayWrapper=document.createElement('div');
+            swayWrapper.classList.add('sway-wrapper');
+            let balloon=document.createElement('div');
+            balloon.classList.add('balloon');
+            balloon.innerHTML=balloonColors[Math.floor(Math.random()*balloonColors.length)];
+            let rope=document.createElement('div');
+            rope.classList.add('rope');
+            rope.innerHTML='〰️';
+            let attached=document.createElement('div');
+            attached.classList.add('attached');
+            attached.innerHTML=item;
+            balloonGroup.dataset.attached=item;
+            swayWrapper.appendChild(balloon); swayWrapper.appendChild(rope); swayWrapper.appendChild(attached); balloonGroup.appendChild(swayWrapper);
+            balloonGroup.onclick=()=>popBalloon(balloonGroup,item);
+            let left=Math.floor(Math.random()*250); balloonGroup.style.left=left+'px'; balloonGroup.style.bottom='-50px'; balloonGroup.style.opacity='0';
+            document.getElementById('game-container').appendChild(balloonGroup);
+            const h=document.getElementById('game-container').clientHeight;
+            anime({targets:balloonGroup,opacity:[0,1],duration:800,easing:'linear'});
+            const anim=anime({targets:balloonGroup,translateY:-h,duration:4000,easing:'easeInOutSine',complete:()=>{balloonGroup.remove();}});
+            balloonGroup._anim=anim; balloonAnimations.push(anim);
+        }
 
         const LEVEL_CAP = 5;
         let runScore = 0;
@@ -463,12 +561,18 @@
                     attached.classList.add("attached");
                     let rand = Math.random();
                     let selectedAnimal;
+                    const giftChance = Math.min(0.10 + 0.01 * (level - 1), 0.20);
+                    const moneyChance = 0.10;
                     const rockChance = Math.min(0.1 + level * 0.02, 0.5);
                     const powerUpChance = 0.05;
                     const hazardChance = 0.05;
-                    if (rand < powerUpChance) {
+                    if (rand < giftChance) {
+                        selectedAnimal = "🎁";
+                    } else if (rand < giftChance + moneyChance) {
+                        selectedAnimal = "💰";
+                    } else if (rand < giftChance + moneyChance + powerUpChance) {
                         selectedAnimal = powerUps[Math.floor(Math.random() * powerUps.length)];
-                    } else if (rand < powerUpChance + hazardChance) {
+                    } else if (rand < giftChance + moneyChance + powerUpChance + hazardChance) {
                         selectedAnimal = hazards[Math.floor(Math.random() * hazards.length)];
                     } else if (Math.random() < rockChance) {
                         selectedAnimal = "🪨";
@@ -565,7 +669,7 @@
             }, interval);
         }
 
-        function popBalloon(balloonGroup, attachedItem) {
+        function popBalloon(balloonGroup, attachedItem, noReward=false) {
             if (isPaused || !canPop) return;
             const comp = window.getComputedStyle(balloonGroup);
             const matrix = new DOMMatrixReadOnly(comp.transform);
@@ -607,7 +711,17 @@
 
             let delta = 0;
 
-            if (attachedItem === "🪨") {
+            if (attachedItem === "💰") {
+                const reward = 5 + level;
+                if(!noReward) runGold += reward;
+                FX.coinShower(balloonGroup);
+                playSound('coin-sound');
+            } else if (attachedItem === "🎁") {
+                const roll=Math.random();
+                if(roll<0.20){ if(!noReward) handleRockPenalty(); }
+                else if(roll<0.84){ const reward=10*level; if(!noReward) runGold+=reward; FX.coinShower(balloonGroup); playSound('jackpot-sound'); }
+                else { const ability=Math.random()<0.5?'chainLightning':'fireBurst'; AbilityManager.activate(ability); }
+            } else if (attachedItem === "🪨") {
                 if (shield) {
                     shield = false;
                 } else {
@@ -632,15 +746,19 @@
                 if (doublePoints) pts *= 2;
                 pts = Math.floor(pts * comboMultiplier);
                 delta = pts;
-                score += delta;
+                if(!noReward) score += delta; else score+=0;
                 savedAnimals[attachedItem] = (savedAnimals[attachedItem] || 0) + 1;
-                  animalTotals[attachedItem] = (animalTotals[attachedItem] || 0) + 1;
-                  localStorage.setItem("animalTotals", JSON.stringify(animalTotals));
-                  updateAlbum();
+                animalTotals[attachedItem] = (animalTotals[attachedItem] || 0) + 1;
+                localStorage.setItem("animalTotals", JSON.stringify(animalTotals));
+                updateAlbum();
                 animalsLeft = Math.max(animalsLeft - 1, 0);
                 registerCombo();
                 animalsRescuedThisRun++;
-                runGold += 1;
+                if(!noReward) runGold += 1;
+            }
+
+            if(!noReward && AbilityManager.active && AbilityManager.active.id==='fireBurst') {
+                explode(balloonGroup);
             }
 
             runScore += delta;
@@ -1102,6 +1220,13 @@
                 localStorage.setItem("selectedHat", selectedHat);
             });
         }
+
+        document.addEventListener('keydown', e => {
+            if(e.key==='M') spawnSingleBalloon('💰');
+            else if(e.key==='G') spawnSingleBalloon('🎁');
+            else if(e.key==='C') AbilityManager.activate('chainLightning');
+            else if(e.key==='F') AbilityManager.activate('fireBurst');
+        });
     </script>
 
 </body>

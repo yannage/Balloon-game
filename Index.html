@@ -39,6 +39,16 @@
             transition: transform linear;
             cursor: pointer; /* easier to see it's clickable */
         }
+
+        .boss-balloon .balloon {
+            font-size: 60px;
+        }
+        .boss-balloon .rope {
+            font-size: 24px;
+        }
+        .boss-balloon .attached {
+            font-size: 40px;
+        }
         .sway-wrapper {
             display: inline-block;
         }
@@ -132,6 +142,7 @@
         <div>Level: <span id="level">1</span></div>
         <div>Score: <span id="score">0</span></div>
         <div>Animals Left: <span id="animals-left">10</span></div>
+        <div id="boss-health" style="display:none;">Boss HP: <span id="boss-health-count">0</span></div>
     </div>
     <h3 class="mt-2">Animal Values: <span id="animal-values"></span></h3>
     <div id="combo" class="mt-2 text-red-600"></div>
@@ -186,6 +197,8 @@
         let comboCount = 0;
         let comboTimer;
         let comboMultiplier = 1;
+        let isBossLevel = false;
+        let bossHealth = 0;
 
         let animalData = {
             "🐌": { speed: 2.7, points: 20 },
@@ -221,7 +234,16 @@
                 'linear-gradient(to bottom, #FDB99B, #CF8BF3)'
             ];
             document.body.style.background = backgrounds[Math.floor((level - 1) / 10) % backgrounds.length];
-            animalsLeft = Math.max(10 + (level - 1), 0);
+            isBossLevel = level % 10 === 0;
+            if (isBossLevel) {
+                bossHealth = 5 + Math.floor(level / 10);
+                animalsLeft = 1;
+                document.getElementById('boss-health').style.display = 'block';
+                document.getElementById('boss-health-count').innerText = bossHealth;
+            } else {
+                animalsLeft = Math.max(10 + (level - 1), 0);
+                document.getElementById('boss-health').style.display = 'none';
+            }
             savedAnimals = {};
             usedPositions = [];
             setCookie("level", level, 7);
@@ -296,6 +318,57 @@
         }
 
         function spawnBalloons() {
+            if (isBossLevel) {
+                let balloonGroup = document.createElement("div");
+                balloonGroup.classList.add("balloon-group", "boss-balloon");
+
+                let swayWrapper = document.createElement("div");
+                swayWrapper.classList.add("sway-wrapper");
+
+                let balloon = document.createElement("div");
+                balloon.classList.add("balloon");
+                balloon.innerHTML = "🔴";
+
+                let rope = document.createElement("div");
+                rope.classList.add("rope");
+                rope.innerHTML = "〰️";
+
+                let attached = document.createElement("div");
+                attached.classList.add("attached");
+                attached.innerHTML = "👾";
+
+                swayWrapper.appendChild(balloon);
+                swayWrapper.appendChild(rope);
+                swayWrapper.appendChild(attached);
+                balloonGroup.appendChild(swayWrapper);
+
+                const container = document.getElementById("game-container");
+                let cw = container.clientWidth;
+                balloonGroup.style.left = (cw / 2 - 30) + "px";
+                balloonGroup.style.bottom = "50px";
+                balloonGroup.style.opacity = "0";
+
+                balloonGroup.onclick = () => popBalloon(balloonGroup, 'BOSS');
+                container.appendChild(balloonGroup);
+
+                setTimeout(() => {
+                    if (isPaused) {
+                        balloonGroup.remove();
+                        return;
+                    }
+                    anime({ targets: balloonGroup, opacity: [0, 1], duration: 800, easing: 'linear' });
+                    const swayAnim = anime({
+                        targets: swayWrapper,
+                        translateX: ['-20px', '20px'],
+                        duration: 3000,
+                        direction: 'alternate',
+                        loop: true,
+                        easing: 'easeInOutSine'
+                    });
+                    balloonAnimations.push(swayAnim);
+                }, 100);
+                return;
+            }
             const interval = Math.max(2000 - (level - 1) * 100, 800);
             balloonInterval = setInterval(() => {
                 if (isPaused) return;
@@ -416,6 +489,32 @@
             let balloon = balloonGroup.querySelector(".balloon");
             // Disable further clicks once popped
             balloonGroup.onclick = null;
+
+            if (isBossLevel && attachedItem === 'BOSS') {
+                anime({ targets: balloon, scale: [1.2, 1], duration: 200, easing: 'easeInOutQuad' });
+                const pop = document.getElementById('pop-sound');
+                if (pop) { pop.currentTime = 0; pop.play(); }
+                bossHealth--;
+                document.getElementById('boss-health-count').innerText = bossHealth;
+                if (bossHealth <= 0) {
+                    anime({ targets: balloon, scale: [1, 2, 0], duration: 200, easing: 'easeInOutQuad' });
+                    setTimeout(() => {
+                        balloon.innerHTML = '💥';
+                        if (pop) { pop.currentTime = 0; pop.play(); }
+                    }, 120);
+                    score += 50;
+                    animalsLeft = 0;
+                    document.getElementById('score').innerText = score;
+                    document.getElementById('animals-left').innerText = animalsLeft;
+                    setTimeout(() => balloonGroup.remove(), 200);
+                    const scoreEl = document.getElementById('score');
+                    anime({ targets: scoreEl, scale: [1.3, 1], duration: 300, easing: 'easeOutElastic(1, .8)' });
+                    endLevel();
+                } else {
+                    balloonGroup.onclick = () => popBalloon(balloonGroup, 'BOSS');
+                }
+                return;
+            }
 
             anime({
                 targets: balloon,

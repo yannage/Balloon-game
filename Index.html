@@ -537,6 +537,9 @@
                                     easing: 'linear',
                                     complete: () => {
                                         balloonGroup.remove();
+                                        if (selectedBalloonGroup === balloonGroup) {
+                                            deselectBalloon();
+                                        }
                                         handleBalloonMiss(selectedAnimal);
                                         const idx = balloonAnimations.indexOf(anim);
                                         if (idx !== -1) balloonAnimations.splice(idx, 1);

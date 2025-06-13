@@ -52,6 +52,10 @@
         .balloon:hover {
             transform: scale(1.2);
         }
+        .balloon.selected-target {
+            transform: scale(1.3);
+            filter: drop-shadow(0 0 5px red);
+        }
         .rope {
             font-size: 18px;
             display: block;
@@ -138,6 +142,22 @@
 
     <div id="game-container"></div>
 
+    <div id="controller-left" class="fixed bottom-4 left-4 grid grid-cols-3 gap-1 text-xl select-none">
+        <div></div>
+        <button onclick="navigateBalloon('up')" class="bg-gray-200 rounded">⬆️</button>
+        <div></div>
+        <button onclick="navigateBalloon('left')" class="bg-gray-200 rounded">⬅️</button>
+        <div></div>
+        <button onclick="navigateBalloon('right')" class="bg-gray-200 rounded">➡️</button>
+        <div></div>
+        <button onclick="navigateBalloon('down')" class="bg-gray-200 rounded col-start-2">⬇️</button>
+    </div>
+
+    <div id="controller-right" class="fixed bottom-4 right-4 flex flex-col items-center space-y-2 select-none">
+        <button onclick="handleA()" class="w-12 h-12 bg-blue-500 text-white rounded-full">A</button>
+        <button onclick="handleB()" class="w-12 h-12 bg-red-500 text-white rounded-full">B</button>
+    </div>
+
     <button id="next-level" class="rounded px-4 py-2 bg-green-600 text-white mt-4" onclick="nextLevel()">Next Level</button>
     <button id="pause-btn" class="rounded px-4 py-2 bg-blue-600 text-white mt-4 ml-2" onclick="togglePause()">Pause</button>
 
@@ -196,6 +216,7 @@
         let comboCount = 0;
         let comboTimer;
         let comboMultiplier = 1;
+        let selectedBalloonGroup = null;
 
         let animalData = {
             "🐌": { speed: 2.7, points: 20 },
@@ -233,6 +254,7 @@
             document.body.style.background = backgrounds[Math.floor((level - 1) / 10) % backgrounds.length];
             animalsLeft = Math.max(10 + (level - 1), 0);
             savedAnimals = {};
+            selectedBalloonGroup = null;
             usedPositions = [];
             setCookie("level", level, 7);
             setCookie("score", score, 7);
@@ -347,6 +369,7 @@
                         selectedAnimal = nonRock[Math.floor(Math.random() * nonRock.length)];
                     }
                     attached.innerHTML = selectedAnimal;
+                    balloonGroup.dataset.attached = selectedAnimal;
 
                     swayWrapper.appendChild(balloon);
                     swayWrapper.appendChild(rope);
@@ -478,7 +501,12 @@
 
                         const h = document.getElementById("game-container").clientHeight;
             balloonGroup.style.transform = "none";
-            setTimeout(() => balloonGroup.remove(), 200);
+            setTimeout(() => {
+                balloonGroup.remove();
+                if (selectedBalloonGroup === balloonGroup) {
+                    deselectBalloon();
+                }
+            }, 200);
 
             if (animalsLeft === 0) {
                 endLevel();
@@ -547,8 +575,70 @@
             document.getElementById("animal-album-modal").classList.remove("hidden");
         }
 
-        function closeAlbum() {
-            document.getElementById("animal-album-modal").classList.add("hidden");
+       function closeAlbum() {
+           document.getElementById("animal-album-modal").classList.add("hidden");
+       }
+
+        function selectBalloon(bg) {
+            if (selectedBalloonGroup) {
+                const b = selectedBalloonGroup.querySelector('.balloon');
+                if (b) b.classList.remove('selected-target');
+            }
+            selectedBalloonGroup = bg;
+            if (selectedBalloonGroup) {
+                const b = selectedBalloonGroup.querySelector('.balloon');
+                if (b) b.classList.add('selected-target');
+            }
+        }
+
+        function deselectBalloon() {
+            selectBalloon(null);
+        }
+
+        function selectRandomBalloon() {
+            const groups = document.querySelectorAll('.balloon-group');
+            if (groups.length === 0) return;
+            const rand = groups[Math.floor(Math.random() * groups.length)];
+            selectBalloon(rand);
+        }
+
+        function handleA() {
+            if (!selectedBalloonGroup) {
+                selectRandomBalloon();
+            } else {
+                popBalloon(selectedBalloonGroup, selectedBalloonGroup.dataset.attached);
+                deselectBalloon();
+            }
+        }
+
+        function handleB() {
+            if (selectedBalloonGroup) {
+                deselectBalloon();
+            }
+        }
+
+        function navigateBalloon(dir) {
+            if (!selectedBalloonGroup) return;
+            const groups = document.querySelectorAll('.balloon-group');
+            const rectSel = selectedBalloonGroup.getBoundingClientRect();
+            const cx = rectSel.left + rectSel.width / 2;
+            const cy = rectSel.top + rectSel.height / 2;
+            let best = null;
+            let bestDist = Infinity;
+            groups.forEach(bg => {
+                if (bg === selectedBalloonGroup) return;
+                const rect = bg.getBoundingClientRect();
+                const bx = rect.left + rect.width / 2;
+                const by = rect.top + rect.height / 2;
+                let dist;
+                if (dir === 'left' && bx < cx) dist = cx - bx;
+                else if (dir === 'right' && bx > cx) dist = bx - cx;
+                else if (dir === 'up' && by < cy) dist = cy - by;
+                else if (dir === 'down' && by > cy) dist = by - cy;
+                else return;
+                if (dist < bestDist) { bestDist = dist; best = bg; }
+            });
+            if (best) selectBalloon(best);
         }
 
 

@@ -135,6 +135,11 @@
         @keyframes fadeOut {
             to { opacity: 0; transform: scale(1.2); }
         }
+
+        /* Ensure the shop modal appears above other overlays */
+        #shop-modal {
+            z-index: 60;
+        }
     </style>
 </head>
 <body class="flex flex-col items-center">

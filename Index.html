@@ -140,6 +140,20 @@
         #shop-modal {
             z-index: 60;
         }
+        #game-container.shielded {
+            box-shadow: 0 0 0 4px cyan inset;
+        }
+        #score.double {
+            color: #ca8a04;
+            text-shadow: 0 0 5px #facc15;
+        }
+        #freeze-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(173,216,230,0.5);
+            pointer-events: none;
+            z-index: 40;
+        }
     </style>
 </head>
 <body class="flex flex-col items-center">
@@ -155,6 +169,7 @@
     <div id="combo" class="mt-2 text-red-600"></div>
     <div id="upcoming-container" class="mt-2">Next Balloons: <span id="upcoming-list"></span></div>
 
+    <div id="powerup-banner" class="hidden fixed top-2 left-1/2 -translate-x-1/2 bg-white/90 text-black px-4 py-1 rounded shadow z-50"></div>
     <div id="game-container"></div>
 
     <div id="controller-left" class="fixed bottom-4 left-4 grid grid-cols-3 gap-1 text-xl select-none">
@@ -171,6 +186,10 @@
     <div id="controller-right" class="fixed bottom-4 right-4 flex flex-col items-center space-y-2 select-none">
         <button onclick="handleA()" class="w-12 h-12 bg-blue-500 text-white rounded-full">A</button>
         <button onclick="handleB()" class="w-12 h-12 bg-red-500 text-white rounded-full">B</button>
+        <div id="ability-meter" class="w-12 h-2 bg-gray-300 rounded overflow-hidden">
+            <div id="ability-fill" class="h-full bg-purple-500" style="width:0%"></div>
+        </div>
+        <button id="ability-btn" onclick="handleY()" class="w-12 h-12 bg-purple-600 text-white rounded-full opacity-50">Y</button>
     </div>
 
     <button id="next-level" class="rounded px-4 py-2 bg-green-600 text-white mt-4" onclick="nextLevel()">Next Level</button>
@@ -231,6 +250,13 @@
         </div>
     </div>
 
+    <div id="ability-select" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-4 rounded flex gap-4 text-3xl">
+            <button onclick="activateAbility('chainLightning')" class="px-4 py-2 bg-yellow-300 rounded">⚡</button>
+            <button onclick="activateAbility('fireBurst')" class="px-4 py-2 bg-red-500 text-white rounded">🔥</button>
+        </div>
+    </div>
+
     <div id="main-menu" class="fixed inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center text-white z-50">
         <h2 class="text-3xl mb-2">Balloon Rescue Game</h2>
         <div>Gold: <span id="player-gold-display">0</span></div>
@@ -281,6 +307,9 @@
         let comboMultiplier = 1;
         let selectedBalloonGroup = null;
         let upcomingQueue = [];
+        let abilityMeter = 0;
+        const ABILITY_MAX = 100;
+        let abilityReady = false;
 
         const BALLOON_DIAMETER = 30;
 
@@ -310,6 +339,25 @@
             }
         };
 
+        function showBanner(text,duration){
+            const b=document.getElementById('powerup-banner');
+            if(!b) return;
+            b.innerText=text;
+            b.classList.remove('hidden');
+            if(duration){
+                let t=duration;
+                b.innerText=`${text} ${t}s`;
+                const id=setInterval(()=>{
+                    t--; if(t>0){b.innerText=`${text} ${t}s`;} else {clearInterval(id); hideBanner();}
+                },1000);
+            }
+        }
+
+        function hideBanner(){
+            const b=document.getElementById('powerup-banner');
+            if(b) b.classList.add('hidden');
+        }
+
         function playSound(id){
             const a = document.getElementById(id);
             if(a){
@@ -330,17 +378,17 @@
 
         function makeChainLightning(){
             return { id:'chainLightning', durationMs:10000,
-                onStart(){ FX.flashScreen('#bbf'); playSound('lightning-start-sound'); },
+                onStart(){ FX.flashScreen('#bbf'); showBanner('Chain Lightning!',10); playSound('lightning-start-sound'); },
                 onUpdate(){ const cont=document.getElementById('game-container'); if(!cont) return; const rect=cont.getBoundingClientRect(); const mid=rect.top+rect.height/2; document.querySelectorAll('.balloon-group').forEach(bg=>{ if(bg.popped) return; const r=bg.getBoundingClientRect(); if(!bg.dataset.cl && r.top<=mid){ bg.dataset.cl='1'; const item=bg.dataset.attached; if(animalData[item]&&item!=='🪨') popBalloon(bg,item); } }); },
-                onEnd(){ FX.clearFlash(); playSound('ability-end-sound'); }
+                onEnd(){ FX.clearFlash(); hideBanner(); playSound('ability-end-sound'); }
             };
         }
 
         function makeFireBurst(){
             return { id:'fireBurst', durationMs:10000,
-                onStart(){ FX.tintScreen('#f55'); playSound('fire-start-sound'); },
+                onStart(){ FX.tintScreen('#f55'); showBanner('Fire Burst!',10); playSound('fire-start-sound'); },
                 onUpdate(){},
-                onEnd(){ FX.clearTint(); playSound('ability-end-sound'); }
+                onEnd(){ FX.clearTint(); hideBanner(); playSound('ability-end-sound'); }
             };
         }
 
@@ -409,6 +457,22 @@
             if(el) el.innerText=upcomingQueue.join(' ');
         }
 
+        function updateAbilityMeter(){
+            const fill=document.getElementById('ability-fill');
+            if(fill) fill.style.width=Math.min(abilityMeter/ABILITY_MAX*100,100)+'%';
+            const btn=document.getElementById('ability-btn');
+            if(btn){
+                if(abilityMeter>=ABILITY_MAX){
+                    abilityReady=true; btn.classList.remove('opacity-50');
+                } else { abilityReady=false; btn.classList.add('opacity-50'); }
+            }
+        }
+
+        function incrementAbilityMeter(val){
+            abilityMeter=Math.min(ABILITY_MAX, abilityMeter+val);
+            updateAbilityMeter();
+        }
+
         const LEVEL_CAP = 5;
         let runScore = 0;
         let runGold = 0;
@@ -474,6 +538,8 @@
             document.getElementById("run-summary-modal").classList.add("hidden");
             document.getElementById("game-container").style.pointerEvents = 'auto';
             canPop = true;
+            abilityMeter = 0;
+            updateAbilityMeter();
             balloonAnimations.forEach(anim => anim.pause());
             balloonAnimations = [];
             cloudAnimations.forEach(anim => anim.pause());
@@ -737,10 +803,10 @@
                 if(!noReward) runGold += reward;
                 FX.coinShower(balloonGroup);
                 playSound('coin-sound');
+                incrementAbilityMeter(5);
             } else if (attachedItem === "🎁") {
                 const roll=Math.random();
-                if(roll<0.20){ if(!noReward) handleRockPenalty(); }
-                else if(roll<0.84){ const reward=10*level; if(!noReward) runGold+=reward; FX.coinShower(balloonGroup); playSound('jackpot-sound'); }
+                if(roll<0.7){ const reward=10*level; if(!noReward) runGold+=reward; FX.coinShower(balloonGroup); incrementAbilityMeter(5); }
                 else { const ability=Math.random()<0.5?'chainLightning':'fireBurst'; AbilityManager.activate(ability); }
             } else if (attachedItem === "🪨") {
                 if (shield) {
@@ -776,6 +842,7 @@
                 registerCombo();
                 animalsRescuedThisRun++;
                 if(!noReward) runGold += 1;
+                incrementAbilityMeter(10);
             }
 
             if(!noReward && AbilityManager.active && AbilityManager.active.id==='fireBurst') {
@@ -827,13 +894,20 @@
         function applyPowerUp(type) {
             if (type === "✨") {
                 doublePoints = true;
-                setTimeout(() => doublePoints = false, 10000);
+                document.getElementById('score').classList.add('double');
+                showBanner('Double Points!',10);
+                setTimeout(() => { doublePoints=false; document.getElementById('score').classList.remove('double'); hideBanner(); },10000);
             } else if (type === "🧊") {
+                showBanner('Freeze!',3);
+                const ov=document.createElement('div'); ov.id='freeze-overlay'; document.body.appendChild(ov);
                 pauseGame();
-                setTimeout(() => resumeGame(), 3000);
+                setTimeout(() => { resumeGame(); ov.remove(); hideBanner(); },3000);
             } else if (type === "🛡️") {
                 shield = true;
-                setTimeout(() => shield = false, 15000);
+                const gc=document.getElementById('game-container');
+                if(gc) gc.classList.add('shielded');
+                showBanner('Shield!',15);
+                setTimeout(() => { shield=false; if(gc) gc.classList.remove('shielded'); hideBanner(); },15000);
             }
         }
 
@@ -887,10 +961,12 @@
             const overlay = document.getElementById("rock-overlay");
             overlay.classList.remove("hidden");
             document.getElementById("game-container").style.pointerEvents = 'none';
+            showBanner('Uh-oh! Rock Hit!',2);
             setTimeout(() => {
                 overlay.classList.add("hidden");
                 document.getElementById("game-container").style.pointerEvents = 'auto';
                 canPop = true;
+                hideBanner();
             }, 2000);
         }
 
@@ -969,6 +1045,18 @@
             if (selectedBalloonGroup) {
                 deselectBalloon();
             }
+        }
+
+        function handleY(){
+            if(!abilityReady) return;
+            document.getElementById('ability-select').classList.remove('hidden');
+        }
+
+        function activateAbility(id){
+            AbilityManager.activate(id);
+            abilityMeter=0;
+            updateAbilityMeter();
+            document.getElementById('ability-select').classList.add('hidden');
         }
 
         function navigateBalloon(dir) {
@@ -1234,6 +1322,7 @@
 
         updatePlayerGoldDisplay();
         updateHatDropdown();
+        updateAbilityMeter();
         const hatSel = document.getElementById("hat-select");
         if (hatSel) {
             hatSel.addEventListener('change', e => {
@@ -1247,6 +1336,7 @@
             else if(e.key==='G') spawnSingleBalloon('🎁');
             else if(e.key==='C') AbilityManager.activate('chainLightning');
             else if(e.key==='F') AbilityManager.activate('fireBurst');
+            else if(e.key==='y' || e.key==='Y') handleY();
         });
     </script>
 

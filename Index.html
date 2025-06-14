@@ -534,6 +534,7 @@
             clearInterval(balloonInterval);
             clearInterval(cloudInterval);
             clearInterval(countdownInterval);
+            AbilityManager.end();
             document.getElementById("main-menu").classList.add("hidden");
             document.getElementById("run-summary-modal").classList.add("hidden");
             document.getElementById("game-container").style.pointerEvents = 'auto';
@@ -987,9 +988,12 @@
        function gameOver() {
            clearInterval(balloonInterval);
            clearInterval(cloudInterval);
+            AbilityManager.end();
+            abilityMeter = 0;
+            updateAbilityMeter();
            balloonAnimations.forEach(a => a.pause());
            cloudAnimations.forEach(a => a.pause());
-            const endBtn = document.getElementById("end-run-btn");
+           const endBtn = document.getElementById("end-run-btn");
             if (endBtn) endBtn.classList.add("hidden");
             const earned = Math.floor(runGold * 0.5);
             playerGold += earned;
@@ -1222,6 +1226,9 @@
         function endRun(mult = 1) {
             clearInterval(balloonInterval);
             clearInterval(cloudInterval);
+            AbilityManager.end();
+            abilityMeter = 0;
+            updateAbilityMeter();
             document.getElementById("end-run-btn").classList.add("hidden");
             const earned = Math.floor(runGold * mult);
             playerGold += earned;
